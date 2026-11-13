@@ -47,6 +47,14 @@ Vertices tool: click an object, then choose what to select in the options bar: *
 
 Select collision polygons, Inspector → **Collision surface type**, enter an id, **Apply**. The id decides grip and sound; `1` is normal ground. The Inspector shows the current type of the selection. (Which id is which surface is not documented yet; try values and report what you find.)
 
+## AI / race routes (experimental)
+
+Layers tab → **AI / race route**: pick a route file (`Paths4xxx` = the circuits and sprints, `PathsFreeRoam`). Its nodes appear as yellow points joined by a line; click one and drag the arrows to move it. Only the node's x/y position is written; the other data of the route file (lookup tables) is not understood yet, so **test every change in the game** and report what happens.
+
+## Raw data explorer (Data tab)
+
+For settings nobody has mapped yet — fog, rain, bridges where rain should not fall, sound reverb ("echo") zones, shop and zone tables — the **Data** tab lets you browse the chunks of `L4RA.BUN` (and route files), read the numbers as hex / float, change one value and queue a *patch*. A patch remembers the bytes it expects, so it refuses to apply to a different file instead of corrupting it, and patches travel inside projects like any other edit. See *Finding a setting* in [FORMATS.md](FORMATS.md).
+
 ## Textures
 
 The bottom dock lists every texture of the map. Select an object, pick a texture, and use *Apply chosen texture* or *Replace with my image…* (keeps size and format). *New texture…* adds one.

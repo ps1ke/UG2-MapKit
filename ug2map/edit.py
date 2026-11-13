@@ -19,6 +19,8 @@ polygon numbers, coordinates): nothing in them is a byte offset, so projects can
   paste              {src, items, centroid, pos, quat, scl, size}   copy objects (and the ground / walls under them) from any region
   paste_collision    {polys, centroid, pos, quat, scl}     copy only collision polygons
   move_marker / add_marker {hash, index, pos, angle}       shop / garage / spawn markers (handled by markers.py)
+  patch_chunk        {file, magic, index, offset, old, new}  raw size-preserving byte patch with an expected-bytes check (patch.py)
+  move_route_node    {file, index, pos:[x, y]}             AI / race route node (handled by routes.py, experimental)
 """
 from __future__ import annotations
 import re

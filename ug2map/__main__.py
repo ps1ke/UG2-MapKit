@@ -6,7 +6,7 @@
 
 <TRACKS dir> is the TRACKS folder of your (unmodified) NFS Underground 2 install. It is only ever READ."""
 import argparse, glob, http.server, json, os, shutil, socketserver, threading, time, webbrowser
-from . import relocate, bun, world, server, edit, markers, projects, updates, __version__
+from . import relocate, bun, world, server, edit, markers, projects, updates, routes, patch, __version__
 
 def regions(tracks): return sorted(os.path.basename(f)[6:-4] for f in glob.glob(os.path.join(tracks, "STREAML4R*.BUN")))
 
@@ -23,8 +23,11 @@ def build(tracks, out, ops, dry=False, getdata=None):
     MK = ("move_marker", "add_marker")
     for reg, lst in list(by.items()):
         mk = [o for o in lst if o["op"] in MK]
+        lst = [o for o in lst if o["op"] != "patch_chunk"]
         if mk: report += [f"[{reg}] markers: " + r for r in markers.apply(tracks, out, reg, mk, dry=dry)]
-        by[reg] = [o for o in lst if o["op"] not in MK]
+        rt = [o for o in lst if o["op"] == "move_route_node"]
+        if rt: report += [f"[{reg}] routes: " + r for r in routes.apply(tracks, out, reg, rt, dry=dry)]
+        by[reg] = [o for o in lst if o["op"] not in MK and o["op"] != "move_route_node"]
     for reg, lst in by.items():
         if not lst: continue
         fn = os.path.join(tracks, f"STREAM{reg}.BUN"); raw = open(fn, "rb").read(); t = bun.parse(raw); report += [f"[{reg}] " + r for r in edit.apply(t, lst, getdata=getdata, topo=edit.Topology(open(os.path.join(tracks, f"{reg}.BUN"), "rb").read()))]
@@ -41,6 +44,8 @@ def build(tracks, out, ops, dry=False, getdata=None):
             tmp = os.path.join(out, f"STREAM{reg}.BUN.new"); dst = os.path.join(out, f"STREAM{reg}.BUN")
             if os.path.exists(dst) and os.stat(dst).st_nlink > 1: os.remove(dst)
             open(tmp, "wb").write(data); os.replace(tmp, dst)
+    pp = [o for o in ops if o.get("op") == "patch_chunk"]
+    if pp: report += ["[patch] " + r for r in patch.apply(tracks, out, pp, dry=dry)]
     return report
 
 
@@ -144,6 +149,13 @@ def cmd_serve(a):
                 elif p == "/api/launch" and a.launch:
                     import shlex, subprocess
                     subprocess.Popen(shlex.split(a.launch), cwd=os.path.dirname(shlex.split(a.launch)[0]) or None, start_new_session=True); self._send(b'{"ok":true}')
+                elif p == "/api/chunks": self._send(json.dumps(patch.chunk_table(a.tracks, body["file"])).encode())
+                elif p == "/api/chunk/entries": self._send(json.dumps(patch.entries(a.tracks, body["file"], int(body["magic"]))).encode())
+                elif p == "/api/chunk/peek": self._send(json.dumps(patch.peek(a.tracks, body["file"], int(body["magic"]), int(body.get("index", 0)), int(body.get("offset", 0)), int(body.get("length", 256)))).encode())
+                elif p == "/api/routes": self._send(json.dumps({"files": routes.list_files(a.tracks, body.get("region", "L4RA"))}).encode())
+                elif p == "/api/route":
+                    td_ = D(body.get("region", "L4RA")); nn = routes.nodes(a.tracks, body.get("region", "L4RA"), body["file"])
+                    self._send(json.dumps([[i, x, y, (td_.ground_z_near(x, y) or 0.0) + 1.5] for i, x, y in nn]).encode())
                 elif p == "/api/markers": self._send(json.dumps({"markers": markers.list_markers(a.tracks, body.get("region", "L4RA")), "types": sorted(markers.NAMES.values())}).encode())
                 elif p == "/api/clipcoll":
                     td_ = D(body.get("region", "L4RA")); cen_ = body["centroid"]; sz_ = body["size"]; hx_, hy_ = sz_[0] / 2 + 0.5, sz_[1] / 2 + 0.5; out_ = []; seen_ = set()

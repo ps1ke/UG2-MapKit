@@ -17,6 +17,7 @@ A viewer, editor and mod-project builder for the **Need for Speed: Underground 2
 * **Edit** the map: move, rotate, scale, hide and copy objects; draw roads, curved roads, quads and walls that you can actually drive on; reshape objects by dragging their vertices; paste parts of any other region (circuits, drag strips...) into the city including their ground and walls; retexture with your own images; add imported OBJ models.
 * **Browse and place** from a catalogue of every model in the map, jump to shops and spawn points with *places…*, and start the game from the editor (`--launch`).
 * **Reshape meshes** by vertex, edge or face, or round-trip a selection through **Blender** (OBJ export / import) and set the **surface type** of collision polygons.
+* **Tweak AI / race routes** (experimental) and **explore the raw data** (hex / float browser with checked patches) for settings that are not mapped yet.
 * **Snap** new surfaces to the existing ground, roads and models so they join without gaps.
 * **Share your work as a project.** A project is a small package of *changes* (no game data). Others import it, switch it on or off, combine it with other projects and build the result from their own copy of the game. See [docs/PROJECTS.md](docs/PROJECTS.md).
 * **Build and install**: only the changed files are written; originals are backed up and can be restored with one click.
@@ -47,6 +48,8 @@ Verified in the game (Windows build running under Wine): hiding / moving objects
 
 Known gaps:
 
+* **Fog, rain (e.g. bridges where it must not fall), sound echo zones and weather cannot be edited by name yet**: the game has them, but where the values sit in the map files is not mapped. The *Data* tab exists to find them (see [docs/FORMATS.md](docs/FORMATS.md)).
+* AI route editing only moves node positions (experimental).
 * **Adding a working shop or garage is not solved.** Markers can be moved and added, but the drive-in zone and door of a shop are separate data and the code that opens the shop menu is not understood yet ([docs/FORMATS.md](docs/FORMATS.md)).
 * The 3D view shows only the project you are editing, not the imported ones. Use *show BUILT collision* and test in the game.
 * New textures are identified by name; two projects adding the same name collide (the build warns).

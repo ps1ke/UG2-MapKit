@@ -60,3 +60,13 @@ Chunks can grow, but the engine finds geometry through the object tables, so new
 * Free-roam resets the car when there is no ground below the predicted position.
 * Teleporting far away in a running game crashes or resets it because the destination section is not streamed in yet.
 * Spawn points are chosen from the markers; the spawn depends on the map.
+
+## Not mapped yet (help wanted): fog, rain, echo, weather
+
+The game executable contains fog (`g_FogEnable`, `FOGVALUE`, `FOGCOLOR`, a horizon-fog effect), rain (`g_RainEnable`, a rain-drop effect, rain sound), tunnel reverb (`SFXCTL_Tunnel`, `Simple_Tunnel*.fx`) and weather strings, but **where the per-place values live in the map files is not known**. Candidates in `L4RA.BUN`: `0x34250` (named location records with radii and several floats, e.g. "Suburban Hills"), `0x34026` / `0x35021` (scenery state names and event icons), `0x3412f` (barrier groups per event), and the section records under `0x34150`. Bridges that keep rain off the road and echoing places may be flags there or in the sound system's own tables.
+
+### Finding a setting
+
+1. Open the **Data** tab and load `L4RA.BUN`.
+2. Change one value of a candidate chunk (patches are small and reversible), build, start the game and look or listen.
+3. When you find what a field does, write it down here (chunk, offset, meaning) in a pull request or issue. With a working description it becomes a proper editor.
