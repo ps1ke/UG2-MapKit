@@ -23,6 +23,10 @@ pip install -r requirements.txt
 
 (`pip install .` also works and adds an `ug2map` command; the examples below use `python -m ug2map`, which works without installing.)
 
+## 2b. The easy way: the launcher
+
+`start.sh` (Linux / macOS) or `start.bat` (Windows, double-click) creates the virtual environment, installs the dependencies, asks **once** for your game folders and starts the program. It stores the answers in `ug2mapkit.config` (not part of the repository); delete that file to be asked again. Then skip to *5. Check that it works*.
+
 ## 3. Make a safe copy of the game files (recommended)
 
 Copy the whole `TRACKS` folder somewhere else, e.g. `~/ug2-original/TRACKS`, and point MapKit at the **copy**. MapKit only ever *reads* this folder. Your game is only touched when you press **Install into game** (and the originals are backed up first).
@@ -34,6 +38,7 @@ python -m ug2map serve ~/ug2-original/TRACKS --workspace ~/ug2-workspace --insta
 ```
 
 * `--workspace` is where your projects, builds and backups are stored (created if missing). Default: `./ug2-workspace`.
+* `--launch "<command that starts the game>"` is optional and adds a *Launch game* button.
 * `--install` is optional. Without it the build is written to `<workspace>/build/TRACKS` and you copy the files yourself.
 * The first start indexes ~10,000 objects and takes about a minute. The browser opens at <http://127.0.0.1:8765/>.
 * The server only listens on `127.0.0.1` (your own computer). It has no login, so do not expose it to a network.

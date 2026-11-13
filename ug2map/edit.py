@@ -14,6 +14,7 @@ polygon numbers, coordinates): nothing in them is a byte offset, so projects can
   add_quad / add_road / add_box / add_mesh                 new visible surfaces / imported models (hosted in removed objects); collision:true makes them solid
   add_wall           {kind: tall|mid, p0, p1, z, sides}    invisible collision wall (the collision array grows when no slot is free)
   remove_polys       {sid, polys}                          delete collision polygons
+  set_surface        {sid, polys, surface}                 surface type id of collision polygons
   clear_walls_box    {box}                                 delete collision walls in a rectangle
   paste              {src, items, centroid, pos, quat, scl, size}   copy objects (and the ground / walls under them) from any region
   paste_collision    {polys, centroid, pos, quat, scl}     copy only collision polygons
@@ -469,6 +470,10 @@ def apply(tree, ops, log=print, getdata=None, topo=None):
             d[v:v + 64] = d[op["off"]:op["off"] + 64]
             struct.pack_into("<6f", d, v, *op["aabb"]); struct.pack_into("<3f", d, v + 0x20, *op["T"]); struct.pack_into("<9h", d, v + 0x2c, *[max(-32768, min(32767, int(round(x * 8192)))) for x in op["R"]])
             pk.data = bytes(d); report.append(f"duplicated {op.get('name','')} (sacrificed one small prop placement, row offset {v})")
+        elif k == "set_surface":                     # surface type of collision polygons (low byte of the polygon's attribute word at +2; 1 = default road/ground)
+            c = cols[int(op["sid"])]
+            for i in op["polys"]: c.polys[int(i) * 32 + 2] = int(op["surface"]) & 0xFF
+            c._dirty = True; report.append(f"set surface type {int(op['surface'])} on {len(op['polys'])} polygon(s) of section {op['sid']}")
         elif k == "clear_walls_box":
             b = op["box"]; n_ = 0
             for sid, c in cols.items():

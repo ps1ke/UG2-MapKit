@@ -164,6 +164,24 @@ class TrackData:
             if q in n.lower(): out.append([ii, n, self._inst_cat(ii), float((aabb[0] + aabb[3]) / 2), float((aabb[1] + aabb[4]) / 2)])
             if len(out) >= limit: break
         return out
+    def catalog(self):
+        """every placed model name with its category, how often it is placed and one example (for the catalogue panel)"""
+        out = {}
+        for ii, (si, row, j, oi, R, T, aabb) in enumerate(self.inst):
+            cat = self._inst_cat(ii)
+            if cat.startswith("bd_") or cat in ("backdrop", "terrain", "road"): continue
+            n = self.objs[oi].name; e = out.setdefault(n, {"name": n, "cat": cat, "count": 0, "example": ii, "x": float((aabb[0] + aabb[3]) / 2), "y": float((aabb[1] + aabb[4]) / 2)}); e["count"] += 1
+        return sorted(out.values(), key=lambda e: (e["cat"], e["name"]))
+    def to_obj(self, items, title="UG2 MapKit export"):
+        """Wavefront OBJ of placed models / baked objects in WORLD coordinates (Z up). Materials are written as `usemtl k<texture key>` so the import can put the textures back."""
+        L = [f"# {title}", "# import in Blender with Forward = Y, Up = Z; export again with the same axes and Selection Only"]; base = 1; vt0 = 1
+        for n, it in enumerate(items):
+            for key, pos, uv, tris in self.item_geometry(it["kind"], it["id"]):
+                L.append(f"o {it.get('name') or 'item'}_{n}"); L.append(f"usemtl k{key}")
+                L += [f"v {p[0]:.4f} {p[1]:.4f} {p[2]:.4f}" for p in pos]; L += [f"vt {u[0]:.5f} {1 - u[1]:.5f}" for u in uv]
+                L += [f"f {t[0] + base}/{t[0] + vt0} {t[1] + base}/{t[1] + vt0} {t[2] + base}/{t[2] + vt0}" for t in tris]
+                base += len(pos); vt0 += len(uv)
+        return "\n".join(L) + "\n"
     @staticmethod
     def backdrop_kind(name):
         n = name.upper()

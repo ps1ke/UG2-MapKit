@@ -15,6 +15,8 @@ A viewer, editor and mod-project builder for the **Need for Speed: Underground 2
 
 * **Look around** the whole free-roam city in 3D: objects, textures, the collision (ground, walls), route nodes, backdrops and the shop / garage / spawn markers.
 * **Edit** the map: move, rotate, scale, hide and copy objects; draw roads, curved roads, quads and walls that you can actually drive on; reshape objects by dragging their vertices; paste parts of any other region (circuits, drag strips...) into the city including their ground and walls; retexture with your own images; add imported OBJ models.
+* **Browse and place** from a catalogue of every model in the map, jump to shops and spawn points with *places…*, and start the game from the editor (`--launch`).
+* **Reshape meshes** by vertex, edge or face, or round-trip a selection through **Blender** (OBJ export / import) and set the **surface type** of collision polygons.
 * **Snap** new surfaces to the existing ground, roads and models so they join without gaps.
 * **Share your work as a project.** A project is a small package of *changes* (no game data). Others import it, switch it on or off, combine it with other projects and build the result from their own copy of the game. See [docs/PROJECTS.md](docs/PROJECTS.md).
 * **Build and install**: only the changed files are written; originals are backed up and can be restored with one click.
@@ -28,6 +30,8 @@ python3 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts
 pip install -r requirements.txt
 python -m ug2map serve "<copy of the game's TRACKS folder>" --workspace ~/ug2-workspace
 ```
+
+Or just run `start.sh` / `start.bat`: it sets everything up and asks for the game folder once.
 
 Open <http://127.0.0.1:8765/>. (The viewer tells you when a newer version is on GitHub; `--no-update-check` turns that off.) The full guide, including the safe-copy recommendation and `--install`, is in **[docs/INSTALL.md](docs/INSTALL.md)**. How to use the editor: **[docs/USAGE.md](docs/USAGE.md)**.
 

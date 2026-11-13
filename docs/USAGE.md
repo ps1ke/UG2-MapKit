@@ -27,6 +27,26 @@ Start the program ([INSTALL.md](INSTALL.md)) and open <http://127.0.0.1:8765/>.
 | shop | place a shop / garage / crib marker (see [FORMATS.md](FORMATS.md) for what markers do and do not do). |
 | measure, ground, dup, del | measure distances, drop an object to the ground, duplicate, delete. |
 
+## Catalogue, places, launch
+
+* **Catalogue** (bottom dock): every placed model of the map by name with how often it is used. Click one: the camera flies to an example and selects it; press **D** to duplicate it and drag the copy where you want it.
+* **places…** (next to *Go*): quick travel to every shop, the crib, car lots and a spawn point.
+* **Launch game** (top bar) appears when you start the program with `--launch "<command that starts the game>"`. Restart the game after every build.
+
+## Editing meshes
+
+Vertices tool: click an object, then choose what to select in the options bar: **vertex**, **edge** or **face** (Shift adds), and drag the arrows. Coincident points move together, so faces stay closed. Props share their model: changing one changes every copy.
+
+### Blender (or any 3D tool) round trip
+
+1. Select objects, Inspector → **Export selection (OBJ)**. The file is written to `<workspace>/exports/` in world coordinates, Z up, with the textures as `usemtl k<key>`.
+2. In Blender: File → Import → Wavefront OBJ with **Forward = Y, Up = Z**. Edit. Export over the same file (Selection Only, Forward = Y, Up = Z).
+3. The viewer notices the saved file; press **Import edited OBJ**. The originals are hidden and your meshes are added as new geometry (hosted in removed terrain pieces, see FORMATS.md). Keep the material names (`k...`) to keep the textures.
+
+## Collision surface types
+
+Select collision polygons, Inspector → **Collision surface type**, enter an id, **Apply**. The id decides grip and sound; `1` is normal ground. The Inspector shows the current type of the selection. (Which id is which surface is not documented yet; try values and report what you find.)
+
 ## Textures
 
 The bottom dock lists every texture of the map. Select an object, pick a texture, and use *Apply chosen texture* or *Replace with my image…* (keeps size and format). *New texture…* adds one.

@@ -83,6 +83,7 @@ def cmd_serve(a):
                 cache[reg] = server.TrackData(a.tracks, None, track=reg, log=lambda m: print(f"[{reg}] {m}", flush=True))
                 cache[reg].overview_json = json.dumps(cache[reg].overview()).encode(); cache[reg].info_json = json.dumps({"bounds": cache[reg].bounds, "sections": cache[reg].sections()}).encode()
             return cache[reg]
+    exports = os.path.join(a.workspace, "exports")
     html = lambda: open(os.path.join(os.path.dirname(__file__), "viewer.html"), "rb").read()
     regs = regions(a.tracks); D("L4RA")
     class H(http.server.BaseHTTPRequestHandler):
@@ -95,7 +96,7 @@ def cmd_serve(a):
         def do_GET(self):
             path = self.path.split("?")[0]; q = dict(p.split("=", 1) for p in self.path.split("?", 1)[1].split("&")) if "?" in self.path else {}; reg = q.get("region", "L4RA")
             try:
-                if path == "/api/regions": self._send(json.dumps({"regions": regs, "traces": [], "install": bool(a.install)}).encode())
+                if path == "/api/regions": self._send(json.dumps({"regions": regs, "traces": [], "install": bool(a.install), "launch": bool(a.launch)}).encode())
                 elif path == "/api/info": self._send(D(reg).info_json)
                 elif path == "/api/overview": self._send(D(reg).overview_json)
                 elif path == "/api/search": self._send(json.dumps(D(reg).search(q.get("q", ""))).encode())
@@ -105,6 +106,11 @@ def cmd_serve(a):
                 elif path == "/api/backdrop": self._send(json.dumps(D(reg).backdrop(q.get("kind", "all"))).encode())
                 elif path == "/api/groundz": z = D(reg).ground_z_near(float(q["x"]), float(q["y"])); self._send(json.dumps({"z": z}).encode())
                 elif path == "/api/edits": self._send(json.dumps(ws.load_edits()).encode())
+                elif path == "/api/catalog": self._send(json.dumps(D(reg).catalog()).encode())
+                elif path == "/api/obj/read":
+                    f = os.path.join(exports, os.path.basename(q["name"])); self._send(open(f, "rb").read(), "text/plain") if os.path.isfile(f) else self.send_error(404)
+                elif path == "/api/obj/mtime":
+                    f = os.path.join(exports, os.path.basename(q["name"])); self._send(json.dumps({"mtime": os.path.getmtime(f) if os.path.isfile(f) else None}).encode())
                 elif path == "/api/update": self._send(json.dumps(upd).encode())
                 elif path == "/api/projects": self._send(json.dumps(ws.info()).encode())
                 elif path == "/api/projects/export":
@@ -132,6 +138,12 @@ def cmd_serve(a):
                 elif p == "/api/projects/meta": ws.save_meta(ws.cfg["active"], body); self._send(json.dumps({"ok": True, **ws.info()}).encode())
                 elif p == "/api/projects/stack": ws.set_stack(body.get("stack", [])); self._send(json.dumps({"ok": True, **ws.info()}).encode())
                 elif p == "/api/projects/remove": ws.remove_from_stack(body["id"], bool(body.get("delete"))); self._send(json.dumps({"ok": True, **ws.info()}).encode())
+                elif p == "/api/obj/export":
+                    os.makedirs(exports, exist_ok=True); name = time.strftime("export_%H%M%S") + ".obj"; fp = os.path.join(exports, name)
+                    open(fp, "w").write(D(body.get("region", "L4RA")).to_obj(body.get("items", []))); self._send(json.dumps({"ok": True, "name": name, "path": fp}).encode())
+                elif p == "/api/launch" and a.launch:
+                    import shlex, subprocess
+                    subprocess.Popen(shlex.split(a.launch), cwd=os.path.dirname(shlex.split(a.launch)[0]) or None, start_new_session=True); self._send(b'{"ok":true}')
                 elif p == "/api/markers": self._send(json.dumps({"markers": markers.list_markers(a.tracks, body.get("region", "L4RA")), "types": sorted(markers.NAMES.values())}).encode())
                 elif p == "/api/clipcoll":
                     td_ = D(body.get("region", "L4RA")); cen_ = body["centroid"]; sz_ = body["size"]; hx_, hy_ = sz_[0] / 2 + 0.5, sz_[1] / 2 + 0.5; out_ = []; seen_ = set()
@@ -151,7 +163,7 @@ def cmd_serve(a):
                     for sid_, pi_ in body.get("polys", []):
                         c_ = td_.cols.get(int(sid_))
                         if c_ is None: continue
-                        x_, y_, z_ = c_.poly(int(pi_)); out_.append({"k": c_.kind(int(pi_)), "x": [float(v) for v in x_], "y": [float(v) for v in y_], "z": [float(v) for v in z_]})
+                        x_, y_, z_ = c_.poly(int(pi_)); out_.append({"surface": int(c_.polys[int(pi_) * 32 + 2]), "k": c_.kind(int(pi_)), "x": [float(v) for v in x_], "y": [float(v) for v in y_], "z": [float(v) for v in z_]})
                     self._send(json.dumps(out_).encode())
                 elif p == "/api/clip": self._send(json.dumps(D(body.get("region", "L4RA")).clip(body.get("items", []))).encode())
                 elif p in ("/api/build", "/api/check"):
@@ -180,7 +192,7 @@ def main():
     for name, fn in (("serve", cmd_serve), ("build", cmd_build)):
         v = s.add_parser(name); v.add_argument("tracks", help="the TRACKS folder of your unmodified game"); v.add_argument("--workspace", default="ug2-workspace", help="where projects, build output and backups live (default ./ug2-workspace)")
         v.add_argument("--install", help="optional: the TRACKS folder to copy the built files into (originals are backed up first)")
-        if name == "serve": v.add_argument("--port", type=int, default=8765); v.add_argument("--no-browser", action="store_true"); v.add_argument("--no-update-check", action="store_true", help="do not look for a newer version on GitHub")
+        if name == "serve": v.add_argument("--launch", help="command that starts the game (shown as a Launch game button), e.g. \"C:/Games/NFSU2/SPEED2.EXE\""); v.add_argument("--port", type=int, default=8765); v.add_argument("--no-browser", action="store_true"); v.add_argument("--no-update-check", action="store_true", help="do not look for a newer version on GitHub")
         v.set_defaults(f=fn)
     a = p.parse_args(); a.f(a)
 
