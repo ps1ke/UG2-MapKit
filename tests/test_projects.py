@@ -42,3 +42,12 @@ class ProjectTests(unittest.TestCase):
         self.assertTrue(P.version_ok("1.2.0", ">=1.0,<2")); self.assertFalse(P.version_ok("2.0", ">=1.0,<2"))
 
 if __name__ == "__main__": unittest.main()
+
+class UpdateTests(unittest.TestCase):
+    def test_check(self):
+        from ug2map import updates, __version__
+        d = tempfile.mkdtemp(); cf = os.path.join(d, "u.json")
+        r = updates.check(cf, fetch=lambda: "99.0.0"); self.assertTrue(r["newer"])
+        r = updates.check(cf, fetch=lambda: (_ for _ in ()).throw(AssertionError("must use the cache"))); self.assertEqual(r["latest"], "99.0.0")
+        r = updates.check(None, fetch=lambda: __version__); self.assertFalse(r["newer"])
+        r = updates.check(None, fetch=lambda: 1 / 0); self.assertFalse(r["newer"])      # offline: silent

@@ -6,7 +6,7 @@
 
 <TRACKS dir> is the TRACKS folder of your (unmodified) NFS Underground 2 install. It is only ever READ."""
 import argparse, glob, http.server, json, os, shutil, socketserver, threading, time, webbrowser
-from . import relocate, bun, world, server, edit, markers, projects
+from . import relocate, bun, world, server, edit, markers, projects, updates, __version__
 
 def regions(tracks): return sorted(os.path.basename(f)[6:-4] for f in glob.glob(os.path.join(tracks, "STREAML4R*.BUN")))
 
@@ -74,6 +74,8 @@ def cmd_build(a):
     if a.install: print("installed", install(out, a.install, os.path.join(a.workspace, "backups")), "file(s) into", a.install)
 
 def cmd_serve(a):
+    upd = {"current": __version__, "latest": None, "newer": False, "url": updates.PAGE, "checked": None}
+    if not a.no_update_check: threading.Thread(target=lambda: upd.update(updates.check(os.path.join(a.workspace, "update.json"))), daemon=True).start()
     cache = {}; lock = threading.Lock(); ws = projects.Workspace(a.workspace); out = os.path.join(a.workspace, "build", "TRACKS"); backups = os.path.join(a.workspace, "backups")
     def D(reg):
         with lock:
@@ -103,6 +105,7 @@ def cmd_serve(a):
                 elif path == "/api/backdrop": self._send(json.dumps(D(reg).backdrop(q.get("kind", "all"))).encode())
                 elif path == "/api/groundz": z = D(reg).ground_z_near(float(q["x"]), float(q["y"])); self._send(json.dumps({"z": z}).encode())
                 elif path == "/api/edits": self._send(json.dumps(ws.load_edits()).encode())
+                elif path == "/api/update": self._send(json.dumps(upd).encode())
                 elif path == "/api/projects": self._send(json.dumps(ws.info()).encode())
                 elif path == "/api/projects/export":
                     pid = q.get("id") or ws.cfg["active"]; self._send(ws.export_zip(pid), "application/zip", headers={"Content-Disposition": f'attachment; filename="{pid}.ug2proj"'})
@@ -166,7 +169,7 @@ def cmd_serve(a):
             except Exception as e: self._err(e)
     socketserver.TCPServer.allow_reuse_address = True
     srv = socketserver.ThreadingTCPServer(("127.0.0.1", a.port), H); srv.daemon_threads = True; url = f"http://127.0.0.1:{a.port}/"
-    print("UG2 MapKit running at", url, "| regions:", regs, "| workspace:", ws.root, "| build output:", out, flush=True)
+    print("UG2 MapKit", __version__, "running at", url, "| regions:", regs, "| workspace:", ws.root, "| build output:", out, flush=True)
     if not a.no_browser: threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try: srv.serve_forever()
     except KeyboardInterrupt: pass
@@ -177,7 +180,7 @@ def main():
     for name, fn in (("serve", cmd_serve), ("build", cmd_build)):
         v = s.add_parser(name); v.add_argument("tracks", help="the TRACKS folder of your unmodified game"); v.add_argument("--workspace", default="ug2-workspace", help="where projects, build output and backups live (default ./ug2-workspace)")
         v.add_argument("--install", help="optional: the TRACKS folder to copy the built files into (originals are backed up first)")
-        if name == "serve": v.add_argument("--port", type=int, default=8765); v.add_argument("--no-browser", action="store_true")
+        if name == "serve": v.add_argument("--port", type=int, default=8765); v.add_argument("--no-browser", action="store_true"); v.add_argument("--no-update-check", action="store_true", help="do not look for a newer version on GitHub")
         v.set_defaults(f=fn)
     a = p.parse_args(); a.f(a)
 

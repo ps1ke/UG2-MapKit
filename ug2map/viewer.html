@@ -61,7 +61,7 @@ body.nor #rdock{display:none}#rsplit,#bsplit{position:absolute;z-index:8;backgro
  <div class="mn"><button>View</button><div class="dd">
   <button data-act="rdock">Toggle right panel</button><button data-act="bdock">Toggle bottom panel</button><button data-act="mini">Toggle minimap</button><hr><button data-act="top">Top-down camera</button><button data-act="frame">Frame selection</button></div></div>
  <div class="mn"><button>Help</button><div class="dd"><button data-act="help">Keyboard shortcuts<kbd>F1</kbd></button></div></div>
- <div id="mright"><span id="pjl" class="sub" title="the project you are editing (Projects tab)"></span><span id="ready" class="sub">…</span><span id="bbadge" class="sub" title="whether the track files on disk contain all your edits"></span><button id="mbuild" class="pri" data-go="build">Build</button></div>
+ <div id="mright"><a id="upd" href="#" target="_blank" rel="noopener" style="display:none;color:#ff9a3a;font-size:12px;text-decoration:none"></a><span id="pjl" class="sub" title="the project you are editing (Projects tab)"></span><span id="ready" class="sub">…</span><span id="bbadge" class="sub" title="whether the track files on disk contain all your edits"></span><button id="mbuild" class="pri" data-go="build">Build</button></div>
 </div>
 <div id="opts">
  <div class="grp show" id="o_default"><span class="t">Select</span><span class="sub">click an object · Ctrl+drag or Box select for many · Shift adds · W/E/R move/rotate/scale</span>
@@ -576,7 +576,8 @@ $('install').onclick=async()=>{if(!confirm('Copy the built files into the game f
 $('clear').onclick=()=>{if(!confirm('Remove all edits?'))return;while(ops.length)undo(0)};
 
 // ---------------- regions / boot ----------------
-$('t_vert').onclick=()=>setTool('verts');loadProjects();$('showmk').onchange=()=>{markerGroup.visible=$('showmk').checked};$('t_mark').onclick=()=>setTool('marker');$('showbuilt').onchange=()=>loadRegion(region);
+$('t_vert').onclick=()=>setTool('verts');loadProjects();
+setTimeout(async()=>{try{const u=await jget('/api/update');if(u.newer){const a=$('upd');a.href=u.url;a.textContent='⬆ update '+u.latest+' available (you have '+u.current+')';a.style.display=''}}catch(e){}},6000);$('showmk').onchange=()=>{markerGroup.visible=$('showmk').checked};$('t_mark').onclick=()=>setTool('marker');$('showbuilt').onchange=()=>loadRegion(region);
 // ---------------- keyboard camera: arrows move, PageUp / PageDown go up / down, Shift = faster ----------------
 orbit.enableKeys=false;const heldKeys=new Set();let shiftNow=false;
 addEventListener('keydown',e=>{const tg=e.target.tagName;if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT')return;shiftNow=e.shiftKey;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown'].includes(e.key)){heldKeys.add(e.key);e.preventDefault()}});

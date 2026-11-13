@@ -50,6 +50,10 @@ python -m ug2map build ~/ug2-original/TRACKS --workspace ~/ug2-workspace --insta
 
 builds the project stack (see [PROJECTS.md](PROJECTS.md)) and installs it.
 
+## Updating
+
+The viewer checks GitHub once a day (in the background) and shows an orange **update available** link in the top bar when a newer version exists. It only notifies; nothing is installed for you. To update, run `git pull` in the program folder. The check downloads one small public file (`ug2map/__init__.py`) and sends nothing about you or your files; turn it off with `--no-update-check`.
+
 ## Uninstalling your changes
 
 In the viewer press **Restore originals** (Edits tab), or copy the files from `<workspace>/backups/` back into the game's `TRACKS` folder. Verifying the game files with your store client also restores them.

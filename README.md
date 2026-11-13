@@ -29,7 +29,7 @@ pip install -r requirements.txt
 python -m ug2map serve "<copy of the game's TRACKS folder>" --workspace ~/ug2-workspace
 ```
 
-Open <http://127.0.0.1:8765/>. The full guide, including the safe-copy recommendation and `--install`, is in **[docs/INSTALL.md](docs/INSTALL.md)**. How to use the editor: **[docs/USAGE.md](docs/USAGE.md)**.
+Open <http://127.0.0.1:8765/>. (The viewer tells you when a newer version is on GitHub; `--no-update-check` turns that off.) The full guide, including the safe-copy recommendation and `--install`, is in **[docs/INSTALL.md](docs/INSTALL.md)**. How to use the editor: **[docs/USAGE.md](docs/USAGE.md)**.
 
 ## Projects in one minute
 
