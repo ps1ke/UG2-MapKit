@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ug2mapkit"
+version = "0.1.0"
+description = "Viewer, editor and mod-project builder for Need for Speed: Underground 2 maps"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24", "Pillow>=10.0"]
+
+[project.scripts]
+ug2map = "ug2map.__main__:main"
+
+[tool.setuptools]
+packages = ["ug2map"]
+
+[tool.setuptools.package-data]
+ug2map = ["viewer.html", "static/*.js", "marker_names.json"]

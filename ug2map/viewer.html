@@ -1,0 +1,670 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>UG2 MapKit</title>
+<style>
+:root{--bg:#0e1117;--panel:#161a22;--panel2:#1c212b;--line:#2a3140;--tx:#d8dde8;--mut:#8a93a6;--acc:#ff9a2e;--acc2:#4ad0ff;--ok:#3fbf6a;--bad:#e04848;--rdock:340px;--bdock:230px}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--tx);font:12.5px/1.4 system-ui,sans-serif;display:grid;overflow:hidden;
+ grid-template-rows:28px 34px minmax(0,1fr) 24px;grid-template-columns:46px minmax(0,1fr) var(--rdock);grid-template-areas:"menu menu menu" "opts opts opts" "tools view rdock" "status status status"}
+body.bot{grid-template-rows:28px 34px minmax(0,1fr) var(--bdock) 24px;grid-template-areas:"menu menu menu" "opts opts opts" "tools view rdock" "tools bdock rdock" "status status status"}
+body.nor{grid-template-columns:46px minmax(0,1fr) 0}
+button{background:#2a3140;color:var(--tx);border:0;border-radius:5px;padding:4px 9px;font-weight:600;cursor:pointer;font-size:12px}button:hover{background:#364055}
+button.pri{background:var(--acc);color:#1a1205}button.pri:hover{background:#ffae52}button.on{outline:2px solid var(--acc)}button.bad{background:#5a2328}button.bad:hover{background:#74303a}
+input[type=number],input[type=text],select{background:#0b0e14;color:var(--tx);border:1px solid var(--line);border-radius:5px;padding:3px 5px}input[type=number]{width:62px}input[type=text]{width:150px}
+label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}h2{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:12px 0 5px}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0}.sub,.sub *{color:var(--mut)}.sub{font-size:11.5px}.sw{width:11px;height:11px;border-radius:3px;display:inline-block}
+#info,#status2,#buildout,#texinfo,#playst{white-space:pre-wrap;color:var(--mut);font-size:12px}
+/* menu bar */
+#menu{grid-area:menu;background:#11151c;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 8px;gap:2px;position:relative;z-index:30}
+#menu .logo{font-weight:800;color:var(--acc);margin-right:10px;letter-spacing:.04em}
+.mn{position:relative}.mn>button{background:none;padding:4px 10px;font-weight:500}.mn>button:hover,.mn.open>button{background:#262d3a}
+.dd{display:none;position:absolute;top:26px;left:0;min-width:240px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:4px;box-shadow:0 10px 30px #000a}.mn.open .dd{display:block}
+.dd button{display:flex;justify-content:space-between;width:100%;background:none;border-radius:4px;padding:5px 9px;font-weight:500}.dd button:hover{background:#2e3647}.dd kbd{color:var(--mut);font:11px monospace}.dd hr{border:0;border-top:1px solid var(--line);margin:4px 2px}
+#mright{margin-left:auto;display:flex;gap:6px;align-items:center}
+/* tool options bar */
+#opts{grid-area:opts;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 10px;overflow:hidden;white-space:nowrap}
+#opts .grp{display:none;align-items:center;gap:7px}#opts .grp.show{display:flex}#opts .t{color:var(--acc);font-weight:700}
+/* tool palette */
+#tools{grid-area:tools;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;overflow:auto}
+#tools button{width:36px;height:36px;padding:0;background:none;font-size:17px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}#tools button small{font-size:8px;color:var(--mut);font-weight:500;margin-top:2px}
+#tools button:hover{background:#2a3140}#tools button.on{background:#3a2c14;outline:1px solid var(--acc)}#tools hr{width:26px;border:0;border-top:1px solid var(--line);margin:4px 0}
+/* viewport */
+#view{grid-area:view;position:relative;min-width:0;min-height:0;overflow:hidden;background:#0c0f15}canvas#c{display:block}
+#vtop{position:absolute;left:10px;top:10px;display:flex;gap:6px;align-items:center;background:#0b0e14d9;border:1px solid var(--line);border-radius:8px;padding:5px 7px;backdrop-filter:blur(4px);z-index:5}
+#vtop input[type=text]{width:170px}#results{position:absolute;left:10px;top:52px;max-height:260px;overflow:auto;background:#0b0e14ee;border:1px solid var(--line);border-radius:8px;padding:4px;display:none;z-index:5;min-width:280px}
+#results div,#ops div,#jumps div{display:flex;justify-content:space-between;gap:6px;padding:2px 5px;color:var(--mut);border-radius:4px}#results div:hover,#ops div:hover{background:#222a38}#results b,#ops b,#jumps b{color:var(--tx);font-weight:500;cursor:pointer}
+#minip{position:absolute;left:10px;bottom:10px;background:#0b0e14e6;border:1px solid var(--line);border-radius:8px;padding:5px;z-index:5}#minip.min canvas{display:none}#minip .mt{display:flex;justify-content:space-between;color:var(--mut);font-size:11px;margin-bottom:3px;gap:10px}
+#mini{width:230px;height:163px;border-radius:5px;background:#0c0f15;cursor:crosshair;display:block}
+#hud{position:absolute;left:260px;bottom:10px;background:#000a;padding:4px 9px;border-radius:6px;color:var(--mut);font-size:12px;max-width:60%}
+#err{position:absolute;right:8px;top:8px;background:#5a2328;color:#fff;padding:6px 10px;border-radius:6px;display:none;max-width:60%;font-size:12px;white-space:pre-wrap;z-index:9}
+#toast{position:absolute;left:50%;transform:translateX(-50%);bottom:50px;background:#161a22f0;border:1px solid var(--line);padding:6px 14px;border-radius:20px;color:var(--tx);display:none;z-index:6;max-width:70%}
+/* docks */
+#rdock{grid-area:rdock;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+body.nor #rdock{display:none}#rsplit,#bsplit{position:absolute;z-index:8;background:transparent}#rsplit{left:-3px;top:0;bottom:0;width:6px;cursor:col-resize}#bsplit{top:-3px;left:0;right:0;height:6px;cursor:row-resize}
+#rsplit:hover,#bsplit:hover{background:var(--acc)}
+.tabs{display:flex;background:#11151c;border-bottom:1px solid var(--line);flex:none;overflow:hidden}.tabs button{background:none;border-radius:0;padding:7px 11px;font-weight:500;color:var(--mut);border-bottom:2px solid transparent}.tabs button.on{color:var(--tx);border-bottom-color:var(--acc);outline:0;background:var(--panel)}
+.pane{display:none;padding:10px;overflow:auto;flex:1;min-height:0}.pane.on{display:block}
+#bdock{grid-area:bdock;background:var(--panel);border-top:1px solid var(--line);display:none;flex-direction:column;min-width:0;min-height:0;position:relative}body.bot #bdock{display:flex}
+#tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:4px;margin:6px 0}#tgrid img{width:100%;aspect-ratio:1;object-fit:cover;border:2px solid transparent;border-radius:4px;cursor:pointer;background:#0c0f15}#tgrid img.cur{border-color:var(--acc)}#tgrid img.used{border-color:var(--acc2)}
+#grp{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0}#grp img{width:44px;height:44px;border:2px solid transparent;border-radius:4px;cursor:pointer}#grp img.cur{border-color:var(--acc)}
+#log{font:11.5px monospace;color:var(--mut);white-space:pre-wrap}
+/* status bar */
+#sbar{grid-area:status;background:#11151c;border-top:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 10px;color:var(--mut);font-size:11.5px;overflow:hidden;white-space:nowrap}#sbar b{color:var(--tx);font-weight:500}#sbar .sp{margin-left:auto}
+#help{position:fixed;inset:0;background:#000a;display:none;z-index:50;align-items:center;justify-content:center}#help.show{display:flex}#help .box{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px 24px;max-width:760px;max-height:80vh;overflow:auto}
+#layers label{display:flex;margin:3px 0}#ops div{align-items:center;border-bottom:1px solid #1f2530}#ops b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#ops button{padding:0 7px;font-size:11px;background:none;color:var(--mut)}#ops button:hover{background:#5a2328;color:#fff}#help table{border-collapse:collapse;width:100%}#help td{padding:3px 10px;border-bottom:1px solid var(--line)}#help td:first-child{font-family:monospace;color:var(--acc);white-space:nowrap}
+</style></head><body class="bot">
+<div id="menu">
+ <span class="logo">UG2 MapKit</span>
+ <div class="mn"><button>File</button><div class="dd">
+  <button data-go="build">Build track files<kbd>Ctrl+B</kbd></button><button data-go="check">Check build (dry run)</button><button data-go="install" id="mi_install">Install into game folder</button><hr><button data-go="clear">Remove all edits…</button></div></div>
+ <div class="mn"><button>Edit</button><div class="dd">
+  <button data-go="bundo">Undo<kbd>Ctrl+Z</kbd></button><hr><button data-go="bcopy">Copy<kbd>Ctrl+C</kbd></button><button data-go="bpaste">Paste<kbd>Ctrl+V</kbd></button><button data-go="dup">Duplicate<kbd>D</kbd></button><button data-go="del">Delete<kbd>Del</kbd></button><hr><button data-go="bgrp">Group<kbd>Ctrl+G</kbd></button><button data-go="bung">Ungroup<kbd>Ctrl+Shift+G</kbd></button></div></div>
+ <div class="mn"><button>Create</button><div class="dd">
+  <button data-go="t_quad">Quad (4 clicks)</button><button data-go="t_road">Road (click a path)</button><button data-go="t_curve">Curved road (start, bend, end)</button><button data-go="t_wall">Collision wall (2 clicks)</button><button data-go="t_box">Box</button><button data-go="t_obj">Import OBJ model…</button><hr><button data-go="tnew">New texture from image…</button></div></div>
+ <div class="mn"><button>View</button><div class="dd">
+  <button data-act="rdock">Toggle right panel</button><button data-act="bdock">Toggle bottom panel</button><button data-act="mini">Toggle minimap</button><hr><button data-act="top">Top-down camera</button><button data-act="frame">Frame selection</button></div></div>
+ <div class="mn"><button>Help</button><div class="dd"><button data-act="help">Keyboard shortcuts<kbd>F1</kbd></button></div></div>
+ <div id="mright"><span id="pjl" class="sub" title="the project you are editing (Projects tab)"></span><span id="ready" class="sub">…</span><span id="bbadge" class="sub" title="whether the track files on disk contain all your edits"></span><button id="mbuild" class="pri" data-go="build">Build</button></div>
+</div>
+<div id="opts">
+ <div class="grp show" id="o_default"><span class="t">Select</span><span class="sub">click an object · Ctrl+drag or Box select for many · Shift adds · W/E/R move/rotate/scale</span>
+  <span class="sub">snap</span><input type="number" id="snap" value="0" step="0.5"><span class="sub">m</span><label class="sub" title="Points jump to nearby ground-collision corners and edges, quad corners and sides, road corners and sides, and model vertices. Hold Alt to turn it off for one click. Press J to weld the selected quad to its neighbours."><input type="checkbox" id="snapg" checked> snap to geometry</label>
+  <span class="sub">pos</span><span id="props" style="display:inline-flex;gap:4px;align-items:center"><input type="number" id="px" step="0.5"><input type="number" id="py" step="0.5"><input type="number" id="pz" step="0.5"><span class="sub">rot°</span><input type="number" id="pr" step="5" style="width:52px"><span class="sub">scale</span><input type="number" id="ps" step="0.05" style="width:56px"></span></div>
+ <div class="grp" id="o_road"><span class="t">Road</span><span class="sub">click points along the path, Enter / Finish when done</span><span class="sub">width</span><input type="number" id="rw" value="14"><span class="sub">m · texture every</span><input type="number" id="ruv" value="10"><span class="sub">m</span><label class="sub"><input type="checkbox" id="rcol" checked> solid ground</label><button id="t_road_end">Finish road</button></div>
+ <div class="grp" id="o_quad"><span class="t">Quad</span><span class="sub">click four corners on the ground</span><label class="sub"><input type="checkbox" id="rcol2" checked> solid ground</label></div>
+ <div class="grp" id="o_marker"><span class="t">Shop marker</span><span class="sub">type</span><select id="mktype"></select><span class="sub">click the ground to place it; move it with the gizmo</span></div>
+ <div class="grp" id="o_wall"><span class="t">Wall</span><span class="sub">click two points · needs 2 free wall slots (it blocks from both sides)</span><select id="wallkind"><option value="tall">tall (solid)</option><option value="mid">mid 3 m</option></select></div>
+ <div class="grp" id="o_obj"><span class="t">Model</span><label class="sub"><input type="checkbox" id="objy" checked> Y-up</label><label class="sub"><input type="checkbox" id="obj2" checked> double-sided</label><span class="sub">scale</span><input type="number" id="objs" value="1" step="0.1"></div>
+ <div class="grp" id="o_measure"><span class="t">Measure</span><span class="sub">click two points</span></div>
+ <div class="grp" id="o_box"><span class="t">Box select</span><span class="sub">drag a rectangle over objects · Shift adds</span></div>
+</div>
+<div id="tools">
+ <button id="mqb" title="Box select (Ctrl+drag)">▭<small>box</small></button>
+ <button id="m_t" class="on" title="Move (W)">✥<small>move</small></button><button id="m_r" title="Rotate (E)">↻<small>rotate</small></button><button id="m_s" title="Scale (R)">⤡<small>scale</small></button>
+ <hr>
+ <button id="t_quad" title="Quad">◇<small>quad</small></button><button id="t_road" title="Road through several points (smoothed)">∿<small>road</small></button><button id="t_curve" title="Curved road: click start, click the bend point, click end (like Cities: Skylines)">⌒<small>curve</small></button><button id="t_wall" title="Collision wall">▮<small>wall</small></button><button id="t_box" title="Box">■<small>box</small></button><button id="t_obj" title="Import OBJ">⬢<small>model</small></button><button id="t_mark" title="Add a shop / garage / crib trigger marker (the game shows its shop prompt there)">⌂<small>shop</small></button><button id="t_vert" title="Edit the vertices (corners) of an object or prop (a prop edit changes every copy of it)">⋰<small>vertices</small></button><input type="file" id="objf" accept=".obj" style="display:none">
+ <hr>
+ <button id="bmeas" title="Measure">↔<small>measure</small></button><button id="bdrop" title="Drop to ground">⤓<small>ground</small></button>
+ <button id="dup" title="Duplicate (D)">⧉<small>dup</small></button><button id="del" title="Delete (Del)" class="bad">✕<small>del</small></button>
+</div>
+<div id="view"><canvas id="c"></canvas>
+ <div id="vtop"><select id="region" title="Region"></select><input type="text" id="q" placeholder="search objects… (Enter)"><button id="qgo">Find</button><span class="sub">go</span><input type="number" id="gx" value="985" style="width:60px"><input type="number" id="gy" value="60" style="width:60px"><button id="go">Go</button></div>
+ <div id="results"></div>
+ <div id="minip"><div class="mt"><span>Map</span><span id="minit" style="cursor:pointer">▾</span></div><canvas id="mini" width="676" height="480"></canvas></div>
+ <div id="hud"></div><div id="err"></div><div id="toast"></div>
+</div>
+<div id="rdock"><div id="rsplit"></div>
+ <div class="tabs" id="rtabs"><button data-t="insp" class="on">Inspector</button><button data-t="layers">Layers</button><button data-t="edits">Edits <span id="opn" class="sub"></span></button><button data-t="proj">Projects</button><button data-t="views">Views</button></div>
+ <div class="pane on" id="p_insp"><div id="info" class="sub">Nothing selected. Click an object, a surface or a collision polygon; Ctrl+drag draws a selection box.</div><div id="grp"></div>
+  <div class="row"><button id="bcopy">Copy</button><button id="bpaste">Paste</button><button id="bgrp">Group</button><button id="bung">Ungroup</button><button id="bundo">Undo</button></div>
+  <h2>Surface texture</h2><div class="row"><button id="tapply">Apply chosen texture</button><button id="trepl">Replace with my image…</button></div><input type="file" id="timg" accept="image/*" style="display:none"><div id="texinfo">Choose a texture in the Textures panel below.</div></div>
+ <div class="pane" id="p_layers"><label><input type="checkbox" id="texs" checked> show textures</label><br><label><input type="checkbox" id="showmk" checked> show shop / garage / spawn markers</label><br><label title="Draw the ground and walls from the BUILT track file (what the game will have, including pasted and added collision) instead of the original map. Press Build first."><input type="checkbox" id="showbuilt"> show BUILT collision (after Build)</label><div id="layers"></div>
+  <div class="row sub">view distance <input type="range" id="vd" min="1" max="3" value="1" style="width:110px"> <span id="vdv">3×3 tiles</span></div></div>
+ <div class="pane" id="p_edits"><div class="row" style="margin-top:0"><button id="build" class="pri">Build track files</button><button id="check">Check</button><button id="weldall" title="Move every quad you made onto the nearest corner of another quad / road edge within 2.5 m, so there are no gaps">Weld all quads</button><button id="install" style="display:none">Install into game</button><button id="restore" style="display:none" class="bad">Restore originals</button><button id="clear" class="bad">Clear all</button></div><div id="buildout"></div><div id="ops" style="margin-top:6px"></div></div>
+ <div class="pane" id="p_proj"><h2 style="margin-top:0">Project you are editing</h2>
+  <div class="row"><input type="text" id="pj_name" placeholder="name" style="flex:1"><input type="text" id="pj_ver" placeholder="version" style="width:64px"></div>
+  <div class="row"><input type="text" id="pj_author" placeholder="author (optional)" style="flex:1"></div>
+  <div class="row"><textarea id="pj_desc" placeholder="what does this project change?" rows="3" style="flex:1;resize:vertical"></textarea></div>
+  <div class="row"><button id="pj_save">Save details</button><button id="pj_export" class="pri" title="Pack this project (edits + textures + models) into one .ug2proj file you can share">Export .ug2proj</button></div>
+  <div class="row"><button id="pj_new">New project…</button><select id="pj_open" style="max-width:120px"></select><button id="pj_openb">Open</button></div>
+  <h2>Imported projects <span class="sub">(applied top to bottom, then yours)</span></h2>
+  <div class="row"><button id="pj_import">Import .ug2proj…</button><input type="file" id="pj_file" accept=".ug2proj,.zip" style="display:none"></div>
+  <div id="pj_stack"></div><div id="pj_msg" class="sub" style="margin-top:6px"></div>
+  <div class="sub" style="margin-top:8px">A build always starts from the untouched game files, applies every switched-on imported project in this order and then your own edits. Switching one off just rebuilds without it.</div></div>
+ <div class="pane" id="p_views"><h2 style="margin-top:0">Saved views</h2><div class="row"><input type="text" id="bmn" placeholder="name" style="width:110px"><button id="bmsave">Save view</button><select id="bm" style="max-width:130px"></select><button id="bmdel" class="bad">✕</button></div>
+  <h2>Drive traces <span class="sub">(poslog)</span></h2><div class="row"><select id="trsel" style="max-width:190px"></select><button id="trshow">Show</button><button id="trhide">Hide</button></div><div id="jumps"></div></div>
+</div>
+<div id="bdock"><div id="bsplit"></div>
+ <div class="tabs" id="btabs"><button data-t="tex" class="on">Textures <span id="tcount" class="sub"></span></button><button data-t="log">Log</button></div>
+ <div class="pane on" id="b_tex" style="padding:6px 10px"><div class="row" style="margin-top:0"><input type="text" id="tq" placeholder="search textures (ROAD, BRICK, GRASS…)"><label class="sub"><input type="checkbox" id="tused"> only on selection</label><button id="tnew">＋ New texture…</button><select id="tnsz"><option value="256,256,34">256×256 DXT1</option><option value="128,128,34">128×128 DXT1</option><option value="64,64,34">64×64 DXT1</option><option value="512,256,34">512×256 DXT1</option><option value="256,512,34">256×512 DXT1</option><option value="256,128,34">256×128 DXT1</option><option value="128,256,34">128×256 DXT1</option><option value="256,256,36">256×256 DXT3 (alpha)</option><option value="128,128,36">128×128 DXT3 (alpha)</option></select><input type="file" id="tnimg" accept="image/*" style="display:none"></div><div id="tgrid"></div></div>
+ <div class="pane" id="b_log"><div id="log"></div></div>
+</div>
+<div id="sbar"><span id="status" style="color:var(--tx)">ready</span><span class="sp"></span><span>Ctrl+Z undo · Ctrl+C/V copy/paste · Ctrl+G group · <b>F1</b> shortcuts</span></div>
+<div id="help"><div class="box"><h2 style="margin-top:0">Keyboard &amp; mouse</h2><table>
+<tr><td>Left-drag / Right-drag / Wheel</td><td>orbit / pan / zoom</td></tr><tr><td>Arrow keys · PageUp / PageDown</td><td>Up/Down fly along the view direction, Left/Right strafe, PgUp/PgDn straight up/down (Shift = faster)</td></tr><tr><td>Vertices tool</td><td>click a terrain / road / wall object, click its corner points (Shift adds), drag the arrows</td></tr><tr><td>Click</td><td>select object, surface or collision polygon</td></tr><tr><td>Ctrl+drag · Box select</td><td>select many objects (Shift adds)</td></tr>
+<tr><td>W · E · R</td><td>move · rotate · scale gizmo</td></tr><tr><td>Del</td><td>delete selection</td></tr><tr><td>D</td><td>duplicate (placed copies)</td></tr><tr><td>Ctrl+Z</td><td>undo last edit</td></tr><tr><td>Ctrl+C / Ctrl+V</td><td>copy / paste (works between regions, imports textures)</td></tr>
+<tr><td>Ctrl+G / Ctrl+Shift+G</td><td>group / ungroup</td></tr><tr><td>Enter</td><td>finish a road</td></tr><tr><td>Esc</td><td>cancel tool / clear selection</td></tr><tr><td>F1</td><td>this help</td></tr></table><p class="sub">click anywhere to close</p></div></div>
+<script src="/static/three.min.js"></script><script src="/static/OrbitControls.js"></script><script src="/static/TransformControls.js"></script>
+<script>
+window.onerror=(m,s,l)=>{const e=document.getElementById('err');e.style.display='block';e.textContent+=m+' @'+l+'\n'};
+const $=id=>document.getElementById(id);
+const dec=(b,T)=>{const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new T(u.buffer)};
+const TILE=256,COL={road:0x5b8cff,terrain:0x6f7a52,buildings:0xc9b79c,walls:0xa08060,props:0xb8ad9c,signs:0xffd24a,other:0xb07fd0,backdrop:0x555a66,bd_sky:0x6aa0e8,bd_skyline:0x8a93a6,bd_hills:0x5f7a4a,bd_other:0x9a8f80};
+const CATS=['road','terrain','buildings','walls','props','signs','other'];
+let region='L4RA';
+const jget=u=>fetch(u).then(r=>r.json());
+const cv=$('c'),renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x10131a);
+const cam=new THREE.PerspectiveCamera(55,1,1,40000);cam.up.set(0,0,1);
+const orbit=new THREE.OrbitControls(cam,cv);orbit.screenSpacePanning=false;
+const gizmo=new THREE.TransformControls(cam,cv);scene.add(gizmo);gizmo.addEventListener('dragging-changed',e=>orbit.enabled=!e.value);
+// ---------------- vertex editing tool ----------------
+const vgizmo=new THREE.TransformControls(cam,cv);vgizmo.setMode('translate');scene.add(vgizmo);
+const vProxy=new THREE.Object3D();scene.add(vProxy);const vOverlay=new THREE.Group();scene.add(vOverlay);
+let vObj=null,vMoved=false,vP0=null;const vSel=new Set();let vStart=new Map();
+vgizmo.addEventListener('dragging-changed',e=>{orbit.enabled=!e.value;if(!e.value)vCommit()});
+vgizmo.addEventListener('objectChange',()=>{if(!vObj||!vSel.size)return;const s=objs.get(vObj),a=objQ(vObj);if(!s||!a)return;vMoved=true;const d=vProxy.position.clone().sub(vP0);s.group.updateMatrixWorld(true);
+ for(const i of vSel){const w=vStart.get(i).clone().add(d);s.group.worldToLocal(w);a.array[i*3]=w.x;a.array[i*3+1]=w.y;a.array[i*3+2]=w.z}
+ for(const m of s.meshes)m.geometry.attributes.position.needsUpdate=true;vBuild()});
+function vInfo(id){const s=objs.get(id);if(!s)return null;
+ if(s.inst){const P=protoGeo[region+':'+s.inst.proto];if(!P)return null;return {s,key:s.inst.proto,proto:true,geos:P.groups.map(g=>g.geo),arr:P.groups[0].geo.attributes.position.array,orig:dec(P.e.pos,Float32Array),c:[0,0,0]}}
+ if(!s.entry||!s.entry.pos||!s.meshes.length)return null;return {s,key:id,proto:false,geos:s.meshes.map(m=>m.geometry),arr:s.meshes[0].geometry.attributes.position.array,orig:dec(s.entry.pos,Float32Array),c:s.center}}
+function objQ(id){const I=vInfo(id);return I?{array:I.arr}:null}
+function vRebuild(I){const q=I.arr,p=I.orig,c=I.c;for(let i=0;i<p.length;i+=3){q[i]=p[i]-c[0];q[i+1]=p[i+1]-c[1];q[i+2]=p[i+2]-c[2]}
+ for(const o of ops)if(o.op==='move_vertices'&&o.id===I.key&&!!o.proto===I.proto&&(o.region||'L4RA')===region)for(const [i,x,y,z] of o.moves){q[i*3]=x-c[0];q[i*3+1]=y-c[1];q[i*3+2]=z-c[2]}
+ for(const g of I.geos){g.attributes.position.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();g.computeBoundingBox()}}
+function vUndo(o){for(const [id,s] of objs){if(o.proto?(s.inst&&s.inst.proto===o.id):id===o.id){const I=vInfo(id);if(I)vRebuild(I);break}}if(vObj!==null){vSel.clear();vRefresh()}}
+function applyVertexMoves(id){const I=vInfo(id);if(I&&ops.some(o=>o.op==='move_vertices'&&o.id===I.key&&!!o.proto===I.proto))vRebuild(I)}
+function vBuild(){vOverlay.clear();if(vObj===null)return;const s=objs.get(vObj),a=objQ(vObj);if(!s||!a)return;const n=a.array.length/3,pos=new Float32Array(n*3),col=new Float32Array(n*3),v=new THREE.Vector3();s.group.updateMatrixWorld(true);
+ for(let i=0;i<n;i++){v.set(a.array[i*3],a.array[i*3+1],a.array[i*3+2]);s.group.localToWorld(v);pos[i*3]=v.x;pos[i*3+1]=v.y;pos[i*3+2]=v.z;const on=vSel.has(i);col[i*3]=on?1:.2;col[i*3+1]=on?.9:.8;col[i*3+2]=on?0:1}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));const pts=new THREE.Points(g,new THREE.PointsMaterial({size:7,sizeAttenuation:false,vertexColors:true,depthTest:false}));pts.renderOrder=999;vOverlay.add(pts)}
+function vRefresh(){vBuild();if(!vSel.size||vObj===null){vgizmo.detach();return}const s=objs.get(vObj),a=objQ(vObj);s.group.updateMatrixWorld(true);vStart=new Map();const c=new THREE.Vector3();
+ for(const i of vSel){const w=new THREE.Vector3(a.array[i*3],a.array[i*3+1],a.array[i*3+2]);s.group.localToWorld(w);vStart.set(i,w);c.add(w)}c.multiplyScalar(1/vSel.size);vProxy.position.copy(c);vP0=c.clone();vgizmo.attach(vProxy);status(vSel.size+' vertices selected: drag the arrows to move them')}
+function vCommit(){if(!vMoved||vObj===null||!vSel.size)return;vMoved=false;const I=vInfo(vObj),a={array:I.arr},c=I.c,moves=[];for(const i of vSel)moves.push([i,a.array[i*3]+c[0],a.array[i*3+1]+c[1],a.array[i*3+2]+c[2]]);
+ const op={op:'move_vertices',region,id:I.key,moves};if(I.proto)op.proto=true;const k=I.proto?-1:ops.findIndex(o=>o.op==='transform_object'&&o.id===vObj&&(o.region||'L4RA')===region);if(k>=0)ops.splice(k,0,op);else ops.push(op);
+ for(const g of I.geos){g.computeVertexNormals();g.computeBoundingSphere();g.computeBoundingBox()}renderOps();saveOps();vRefresh()}
+function vExit(){vObj=null;vSel.clear();vOverlay.clear();vgizmo.detach()}
+function vPick(e){const s=objs.get(vObj),a=objQ(vObj);if(!s||!a)return -1;const r=cv.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top,v=new THREE.Vector3();let best=-1,bd=196;s.group.updateMatrixWorld(true);
+ for(let i=0;i<a.array.length/3;i++){v.set(a.array[i*3],a.array[i*3+1],a.array[i*3+2]);s.group.localToWorld(v);v.project(cam);if(v.z>1)continue;const x=(v.x+1)/2*r.width,y=(1-v.y)/2*r.height,d=(x-mx)**2+(y-my)**2;if(d<bd){bd=d;best=i}}return best}
+function vSame(i){const a=objQ(vObj).array,o=[];for(let j=0;j<a.length/3;j++)if(Math.abs(a[j*3]-a[i*3])<.01&&Math.abs(a[j*3+1]-a[i*3+1])<.01&&Math.abs(a[j*3+2]-a[i*3+2])<.01)o.push(j);return o}
+function vertClick(e){if(vgizmo.axis)return;
+ if(vObj!==null){const i=vPick(e);if(i>=0){const same=vSame(i),was=vSel.has(i);if(!e.shiftKey)vSel.clear();for(const j of same){if(e.shiftKey&&was)vSel.delete(j);else vSel.add(j)}vRefresh();return}}
+ const r=cv.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mv,cam);
+ const vis=pickables.filter(m=>{let p=m;while(p){if(!p.visible)return false;p=p.parent}return true});const h=ray.intersectObjects(vis,false).find(x=>x.object.userData.id!==undefined);
+ if(!h){if(!e.shiftKey){vSel.clear();vRefresh()}return}const id=h.object.userData.id,so=objs.get(id);
+ const I0=vInfo(id);if(!so||!I0){status('this object cannot be vertex-edited');return}
+ vExit();vObj=id;vBuild();status((so.entry.name||id)+(I0.proto?' (a prop: ALL copies of it in the map change together)':'')+': click vertices (Shift adds), then drag the arrows. Esc to leave.')}
+
+scene.add(new THREE.AmbientLight(0xffffff,0.85));const dl=new THREE.DirectionalLight(0xffffff,0.7);dl.position.set(200,-300,500);scene.add(dl);
+function resize(){const v=$('view');renderer.setSize(v.clientWidth,v.clientHeight,false);cv.style.width=v.clientWidth+'px';cv.style.height=v.clientHeight+'px';cam.aspect=v.clientWidth/v.clientHeight;cam.updateProjectionMatrix()}addEventListener('resize',resize);
+
+// ---------------- layers ----------------
+const layerGroups={};const layerDefs=[...CATS.map(c=>['visual: '+c,c,true]),['backdrop: sky dome','bd_sky',false],['backdrop: skyline panoramas','bd_skyline',false],['backdrop: hills & shoreline','bd_hills',false],['backdrop: far buildings','bd_other',false],['collision: ground','ground',true],['collision: changed ground','ground_new',true],['collision: tall walls','wall_tall',false],['collision: mid walls','wall_mid',true],['route nodes','routes',true]];
+for(const [n,k,on] of layerDefs){const g=new THREE.Group();g.visible=on;scene.add(g);layerGroups[k]=g;
+ const l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.checked=on;const sw=document.createElement('span');sw.className='sw';sw.style.background=COL[k]!==undefined?'#'+COL[k].toString(16).padStart(6,'0'):({ground:'#3fbf6a',ground_new:'#e040e0',wall_tall:'#e04848',wall_mid:'#f0a030',routes:'#4ad0ff'})[k];
+ c.onchange=()=>{g.visible=c.checked;drawMini();if(k.startsWith('bd_')&&c.checked)loadBackdrop(k.slice(3))};l.append(c,sw,n);$('layers').append(l)}
+const texCache={},texUrl={};let texMap={};
+function getTex(k){if(!k)return null;if(!texUrl[k])texUrl[k]='/api/tex.png?region='+region+'&key='+k+'&s=256';if(texCache[k])return texCache[k];const t=new THREE.TextureLoader().load(texUrl[k]);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.flipY=false;if(THREE.sRGBEncoding)t.encoding=THREE.sRGBEncoding;return texCache[k]=t}
+function refreshKey(k){delete texCache[k];for(const [id,o] of objs)for(const m of o.meshes)if(m.userData.key==k&&$('texs').checked){m.material.map=getTex(k);m.material.needsUpdate=true}}
+
+// ---------------- state ----------------
+const protoGeo={};let ops=[];const objs=new Map();const tiles=new Map();let viewR=1,info=null,over=null,sel=null,tool=null,wallP0=null,curTex=0,selKey=0;
+const roadPts=[],quadPts=[];let pendingSelect=null;
+const selPolys=[];const selOverlay=new THREE.Group(),delOverlay=new THREE.Group(),toolOverlay=new THREE.Group(),traceGroup=new THREE.Group(),prevGroup=new THREE.Group();scene.add(selOverlay,delOverlay,toolOverlay,traceGroup,prevGroup);
+const deletedPolys=new Set();const pickables=[];
+let toastT=null;const status=t=>{$('status').textContent=t;const L=$('log');if(L){L.textContent+=new Date().toLocaleTimeString()+'  '+t+'\n';L.scrollTop=L.scrollHeight}const T=$('toast');if(T&&t){T.textContent=t;T.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>T.style.display='none',3500)}};
+JSON.stringify=(f=>(v,r,s)=>f(v,(k,x)=>k[0]==='_'?undefined:(r?r(k,x):x),s))(JSON.stringify);
+
+// ---------------- ops / edits panel ----------------
+let saveT=null;
+function saveOps(){scheduleReady();clearTimeout(saveT);saveT=setTimeout(()=>{for(const o of ops)if(o._mesh&&o.op==='add_mesh')bakeMesh(o);fetch('/api/edits',{method:'POST',body:JSON.stringify({ops,groups})})},300);renderOps()}
+function opText(o){const t={move_marker:()=>'move marker '+(o.name||o.hash),add_marker:()=>'ADD marker '+o.name,paste_collision:()=>'paste '+o.n+' collision polygons',move_vertices:()=>'move '+o.moves.length+' vertices of object '+o.id,duplicate_instance:()=>'duplicate '+(o.name||''),add_texture:()=>'NEW texture '+o.name+' '+o.w+'×'+o.h,paste:()=>'paste '+o.n+' objects from '+o.src+' (click to select)',move_instance:()=>'move/rotate/scale '+(o.name||'building/prop'),remove_object:()=>'delete #'+o.id+' '+(o.name||''),transform_object:()=>'move/rotate/scale #'+o.id+' '+(o.name||''),remove_polys:()=>'delete '+o.polys.length+' polygon(s) §'+o.sid,add_wall:()=>'add '+o.kind+' wall §'+o.sid,
+ add_box:()=>'add box',add_quad:()=>'add quad'+(o.collision?' (solid)':''),add_road:()=>'add road '+o.points.length+' pts, '+o.width+' m'+(o.collision?' (solid)':''),add_mesh:()=>'add model ('+(o.tris?o.tris.length:'?')+' tris)',set_texture:()=>'texture #'+o.id+' → '+((texMap[o.to_key]||[])[0]||o.to_key),replace_texture:()=>'replace texture '+((texMap[o.key]||[])[0]||o.key)+' with my image'}[o.op];return (o.region&&o.region!==region?'['+o.region+'] ':'')+(t?t():o.op)}
+function renderOps(){const d=$('ops');d.innerHTML='';$('opn').textContent='('+ops.length+')';ops.forEach((o,i)=>{const r=document.createElement('div');const b=document.createElement('b');b.textContent=opText(o);if(o.op==='paste')b.onclick=()=>selectPaste(o);const x=document.createElement('button');x.textContent='✕';x.onclick=()=>undo(i);r.append(b,x);d.append(r)})}
+function undo(i){const o=ops[i];ops.splice(i,1);
+ if(o.op==='add_marker'&&o._mk){const m=o._mk;markerGroup.remove(m.group);m.group.traverse(q=>{const k=pickables.indexOf(q);if(k>=0)pickables.splice(k,1)});mkById.delete(m.id);if(sel&&sel.type==='marker'&&sel.m===m){gizmo.detach();sel=null}}
+ if(o.op==='move_marker'){const m=[...mkById.values()].find(q=>q.base&&q.hash===o.hash&&q.index===(o.index||0));const b=m&&mkBase.find(q=>q.hash===o.hash&&q.index===(o.index||0));if(b){m.group.position.set(...b.pos);m.group.rotation.z=(b.angle/65536)*Math.PI*2;m.pos=b.pos.slice();m.angle=b.angle}}
+ if(o.op==='move_vertices')vUndo(o);
+ if(o.op==='remove_object'){const s=objs.get(o.id);if(s)s.group.visible=true}
+ if(o.op==='transform_object'){const s=objs.get(o.id);if(s){s.group.position.fromArray(s.center);s.group.quaternion.set(0,0,0,1);s.group.scale.set(1,1,1)}}
+ if(o.op==='duplicate_instance'&&o._obj){const s=o._obj;s.group.parent&&s.group.parent.remove(s.group);for(const m of s.meshes){const k=pickables.indexOf(m);if(k>=0)pickables.splice(k,1)}objs.delete(s.group.userData.id);deselect()}
+ if(o.op==='move_instance'){for(const [id,s] of objs)if(s.inst&&s.inst.sec===o.sec&&s.inst.off===o.off){s.group.visible=true;instM(s.inst.m).decompose(s.group.position,s.group.quaternion,s.group.scale)}}
+ if(o.op==='remove_polys')for(const p of o.polys)deletedPolys.delete(o.sid+':'+p);
+ if(o._grp){o._grp.traverse(m=>{const k=pickables.indexOf(m);if(k>=0)pickables.splice(k,1)});prevGroup.remove(o._grp);if(sel&&sel.grp===o._grp){gizmo.detach();sel=null}}
+ if(o._mesh){const kk=pickables.indexOf(o._mesh);if(kk>=0)pickables.splice(kk,1);prevGroup.remove(o._mesh);if(sel&&sel.mesh===o._mesh)deselect()}
+ if(o.op==='set_texture'){const s=objs.get(o.id);if(s)for(const m of s.meshes)if(m.userData.key==o.to_key){m.userData.key=o.from_key;m.material.map=$('texs').checked?getTex(o.from_key):null;m.material.needsUpdate=true}}
+ rebuildDeleted();saveOps()}
+function upsertTransform(id,name,g,center){const i=ops.findIndex(o=>o.op==='transform_object'&&o.id===id);const o={op:'transform_object',region,id,name,center,position:g.position.toArray(),quaternion:g.quaternion.toArray(),scale:g.scale.toArray()};if(i>=0)ops[i]=o;else ops.push(o);saveOps()}
+
+// ---------------- tiles ----------------
+const tileKey=(x,y)=>region+':'+x+','+y;
+function addObject(e,T){if(objs.has(e.id))return;const p=dec(e.pos,Float32Array),uv=dec(e.uv,Float32Array);const b=e.bbox,c=[(b[0]+b[3])/2,(b[1]+b[4])/2,(b[2]+b[5])/2];
+  const q=new Float32Array(p.length);for(let i=0;i<p.length;i+=3){q[i]=p[i]-c[0];q[i+1]=p[i+1]-c[1];q[i+2]=p[i+2]-c[2]}
+  const g=new THREE.Group();g.position.set(c[0],c[1],c[2]);g.userData={id:e.id};const meshes=[];
+  for(const gr of e.groups){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(q,3));geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));geo.setIndex(new THREE.BufferAttribute(dec(gr.idx,Uint32Array),1));geo.computeVertexNormals();
+   const fl=e.changed?0xff7ad0:COL[e.cat];const map=$('texs').checked&&gr.key?getTex(gr.key):null;const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:map?0xffffff:fl,map:map,side:THREE.DoubleSide,flatShading:true}));
+   m.userData={id:e.id,key:gr.key,flat:fl,cat:e.cat};g.add(m);meshes.push(m);pickables.push(m)}
+  layerGroups[e.cat].add(g);objs.set(e.id,{group:g,meshes,entry:e,center:c});T.items.push({obj:e.id});
+  applyVertexMoves(e.id);
+  if(ops.some(o=>o.op==='remove_object'&&o.id===e.id&&(o.region||'L4RA')===region))g.visible=false;
+  const tr=ops.find(o=>o.op==='transform_object'&&o.id===e.id&&(o.region||'L4RA')===region);if(tr){g.position.fromArray(tr.position);g.quaternion.fromArray(tr.quaternion);g.scale.fromArray(tr.scale)}
+  for(const o of ops)if(o.op==='set_texture'&&o.id===e.id)for(const m of meshes)if(m.userData.key===o.from_key){m.userData.key=o.to_key;if($('texs').checked)m.material.map=getTex(o.to_key)}
+  if(pendingSelect===e.id){pendingSelect=null;selectObj(e.id)}}
+function mkProto(e){const p=dec(e.pos,Float32Array),uv=dec(e.uv,Float32Array);return {e,groups:e.groups.map(gr=>{const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(p,3));geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));geo.setIndex(new THREE.BufferAttribute(dec(gr.idx,Uint32Array),1));geo.computeVertexNormals();return {geo,key:gr.key}})}}
+function instM(m){return new THREE.Matrix4().set(m[0],m[4],m[8],m[12],m[1],m[5],m[9],m[13],m[2],m[6],m[10],m[14],0,0,0,1)}
+function addInst(i,T){const id='i'+i.id;if(objs.has(id))return;const P=protoGeo[region+':'+i.proto];if(!P)return;const g=new THREE.Group();const M=instM(i.m);M.decompose(g.position,g.quaternion,g.scale);g.userData={id};const meshes=[];
+  for(const gr of P.groups){const fl=i.changed?0xff7ad0:(/^XT_/.test(i.name)?0x3f7a35:COL[i.cat]);const map=$('texs').checked&&gr.key?getTex(gr.key):null;const m=new THREE.Mesh(gr.geo,new THREE.MeshLambertMaterial({color:map?0xffffff:fl,map:map,side:THREE.DoubleSide,flatShading:true}));m.userData={id,key:gr.key,flat:fl,cat:i.cat,shared:true};g.add(m);meshes.push(m);pickables.push(m)}
+  const a=i.aabb;layerGroups[i.cat].add(g);objs.set(id,{group:g,meshes,inst:i,entry:{name:i.name,cat:i.cat,changed:i.changed,cap:P.e.cap,bbox:a},center:[0,0,0],lbox:P.e.lbox});T.items.push({obj:id});if(!P._vm){P._vm=1;applyVertexMoves(id)}
+  const o=ops.find(o=>o.op==='move_instance'&&o.sec===i.sec&&o.off===i.off&&(o.region||'L4RA')===region);if(o){g.position.fromArray(o.pos);g.quaternion.fromArray(o.quat);g.scale.fromArray(o.scl)}
+  if(pendingSelect===id){pendingSelect=null;selectObj(id)}}
+function instOp(o){const g=o.group,i=o.inst;g.updateWorldMatrix(true,false);const M=g.matrixWorld,e=M.elements;const p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();M.decompose(p,q,s);const R=[e[0],e[1],e[2],e[4],e[5],e[6],e[8],e[9],e[10]],T=[e[12],e[13],e[14]];const b=o.lbox,lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
+ for(let c=0;c<8;c++){const v=new THREE.Vector3(c&1?b[3]:b[0],c&2?b[4]:b[1],c&4?b[5]:b[2]).applyMatrix4(M);for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],[v.x,v.y,v.z][k]);hi[k]=Math.max(hi[k],[v.x,v.y,v.z][k])}}
+ return {op:'move_instance',region,sec:i.sec,off:i.off,name:i.name,R,T,aabb:[...lo,...hi],pos:p.toArray(),quat:q.toArray(),scl:s.toArray()}}
+function upsertInst(o){const n=instOp(o);const k=ops.findIndex(x=>x.op==='move_instance'&&x.sec===n.sec&&x.off===n.off&&(x.region||'L4RA')===region);if(k>=0)ops[k]=n;else ops.push(n);saveOps()}
+async function loadTile(tx,ty){const k=tileKey(tx,ty);if(tiles.has(k))return;tiles.set(k,{loading:true,items:[]});
+ const r=await fetch('/api/tile',{method:'POST',body:JSON.stringify({region,region_box:[tx*TILE,(tx+1)*TILE,ty*TILE,(ty+1)*TILE],have:Object.keys(texUrl).map(Number),have_protos:Object.keys(protoGeo).filter(k=>k.startsWith(region+':')).map(k=>+k.split(':')[1]),built:$('showbuilt').checked})});const S=await r.json();
+ if(!tiles.has(k))return;const T=tiles.get(k);T.loading=false;Object.assign(texUrl,S.textures);for(const e of S.objects)addObject(e,T);for(const pid in S.protos)protoGeo[region+':'+pid]=mkProto(S.protos[pid]);for(const i of S.instances)addInst(i,T);
+ for(const k2 in S.collision){const C=S.collision[k2],geo=new THREE.BufferGeometry();let cpos=dec(C.pos,Float32Array),cpid=dec(C.pid,Int32Array);
+  if(deletedPolys.size){const kp=[],kq=[];for(let t=0;t*9<cpos.length;t++){if(deletedPolys.has(cpid[2*t]+':'+cpid[2*t+1]))continue;for(let q=0;q<9;q++)kp.push(cpos[t*9+q]);kq.push(cpid[2*t],cpid[2*t+1])}cpos=new Float32Array(kp);cpid=new Int32Array(kq);C.pos=null}
+  geo.setAttribute('position',new THREE.BufferAttribute(cpos,3));
+  const colr={ground:0x3fbf6a,ground_new:0xe040e0,wall_tall:0xe04848,wall_mid:0xf0a030}[k2];const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:colr,transparent:true,opacity:k2==='ground'?0.3:0.55,side:THREE.DoubleSide,depthWrite:false}));
+  m.userData={coll:k2,pid:cpid};layerGroups[k2].add(m);pickables.push(m);T.items.push({mesh:m,layer:k2})}
+ rebuildDeleted();drawMini()}
+function unloadTile(k){const T=tiles.get(k);if(!T)return;for(const it of T.items){if(it.obj!==undefined){const o=objs.get(it.obj);if(o){layerGroups[o.entry.cat].remove(o.group);for(const m of o.meshes){const i=pickables.indexOf(m);if(i>=0)pickables.splice(i,1);if(!m.userData.shared)m.geometry.dispose()}layerGroups[o.entry.cat].remove(o.group);objs.delete(it.obj)}}else{layerGroups[it.layer].remove(it.mesh);const i=pickables.indexOf(it.mesh);if(i>=0)pickables.splice(i,1);it.mesh.geometry.dispose()}}tiles.delete(k)}
+function ensureTiles(){const t=orbit.target,tx=Math.floor(t.x/TILE),ty=Math.floor(t.y/TILE);const want=new Set();for(let dx=-viewR;dx<=viewR;dx++)for(let dy=-viewR;dy<=viewR;dy++)want.add(tileKey(tx+dx,ty+dy));
+ for(const k of want)if(!tiles.has(k)){const [a,b]=k.split(':')[1].split(',').map(Number);loadTile(a,b)}
+ for(const k of [...tiles.keys()])if(!want.has(k)){const [a,b]=k.split(':')[1].split(',').map(Number);if(Math.abs(a-tx)>viewR+1||Math.abs(b-ty)>viewR+1)unloadTile(k)}}
+setInterval(()=>{if(info)ensureTiles()},600);
+const bdLoaded=new Set();
+async function loadBackdrop(kind){const key=region+':'+kind;if(bdLoaded.has(key))return;bdLoaded.add(key);const S=await jget('/api/backdrop?region='+region+'&kind='+kind);
+ for(const pid in S.protos)protoGeo[region+':'+pid]=mkProto(S.protos[pid]);
+ const add=(g,cat)=>{layerGroups[cat].add(g)};
+ for(const i of S.instances){const P=protoGeo[region+':'+i.proto];if(!P)continue;const g=new THREE.Group();instM(i.m).decompose(g.position,g.quaternion,g.scale);
+  for(const gr of P.groups){const map=$('texs').checked&&gr.key?getTex(gr.key):null;const m=new THREE.Mesh(gr.geo,new THREE.MeshLambertMaterial({color:map?0xffffff:COL[i.cat],map:map,side:THREE.DoubleSide,fog:false}));m.frustumCulled=false;m.userData={key:gr.key,bd:1};if(i.cat==='bd_sky'){m.material.depthWrite=false;m.renderOrder=-10}g.add(m)}add(g,i.cat)}
+ for(const e of S.objects){const p=dec(e.pos,Float32Array),uv=dec(e.uv,Float32Array),g=new THREE.Group();for(const gr of e.groups){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(p,3));geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));geo.setIndex(new THREE.BufferAttribute(dec(gr.idx,Uint32Array),1));geo.computeVertexNormals();const map=$('texs').checked&&gr.key?getTex(gr.key):null;const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:map?0xffffff:COL[e.cat],map:map,side:THREE.DoubleSide}));m.frustumCulled=false;if(e.cat==='bd_sky'){m.material.depthWrite=false;m.renderOrder=-10}g.add(m)}add(g,e.cat)}
+ status(kind+' backdrop loaded ('+(S.instances.length+S.objects.length)+' pieces)')}
+$('vd').oninput=e=>{viewR=+e.target.value;$('vdv').textContent=(2*viewR+1)+'×'+(2*viewR+1)+' tiles'};
+$('texs').onchange=e=>{for(const [id,o] of objs)for(const m of o.meshes){const map=e.target.checked?getTex(m.userData.key):null;m.material.map=map;m.material.color.setHex(map?0xffffff:m.userData.flat);m.material.needsUpdate=true}};
+
+// ---------------- polygon overlays ----------------
+function polyTris(sid,poly){const out=[];for(const m of pickables){const u=m.userData;if(!u.coll)continue;const pid=u.pid,pos=m.geometry.attributes.position.array;for(let t=0;t<pid.length/2;t++)if(pid[2*t]===sid&&pid[2*t+1]===poly)for(let k=0;k<9;k++)out.push(pos[t*9+k])}return out}
+function overlayFrom(list,color,opacity){const g=new THREE.Group();const arr=[];for(const [sid,poly] of list)arr.push(...polyTris(sid,poly));if(arr.length){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(arr),3));g.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color,transparent:true,opacity,side:THREE.DoubleSide,depthTest:false})))}return g}
+function rebuildSel(){selOverlay.clear();selOverlay.add(overlayFrom(selPolys.map(p=>[p.sid,p.poly]),0xffe14a,0.9))}
+function rebuildDeleted(){delOverlay.clear();if(!deletedPolys.size)return;for(const m of pickables){const pid=m.userData&&m.userData.pid;if(!pid||!m.geometry)continue;const a=m.geometry.attributes.position;let hit=false;for(let t=0;t*9<a.array.length;t++){if(deletedPolys.has(pid[2*t]+':'+pid[2*t+1])&&(a.array[t*9]||a.array[t*9+1]||a.array[t*9+2])){a.array.fill(0,t*9,t*9+9);hit=true}}if(hit)a.needsUpdate=true}}   // deleted collision polygons are simply not drawn
+
+// ---------------- selection ----------------
+function deselect(){if(msel&&msel.length&&!(sel&&sel.type==='multi'&&false))releaseMulti();gizmo.detach();if(sel&&sel.obj)for(const m of sel.obj.meshes)m.material.emissive.setHex(0);sel=null;selKey=0;selPolys.length=0;rebuildSel();$('grp').innerHTML='';$('info').textContent='Click an object, a surface, or a collision polygon. Shift+click adds polygons.';refreshTexGrid()}
+function selectObj(id,key){deselect();const o=objs.get(id);if(!o)return;sel={type:'obj',id,obj:o};for(const m of o.meshes)m.material.emissive.setHex(0x553300);gizmo.attach(o.group);const e=o.entry;selKey=key||(o.meshes[0]&&o.meshes[0].userData.key)||0;
+ $('info').textContent=e.name+'\ncategory '+e.cat+(o.inst?'  (placed copy; moving it changes only this copy)':'')+(e.changed?'  (changed by earlier edits)':'')+'\nhost capacity '+e.cap+' quads · object id '+id+'\nbbox '+e.bbox.map(v=>v.toFixed(0)).join(', ');
+ const G=$('grp');G.innerHTML='';const seen=new Set();for(const m of o.meshes){const k=m.userData.key;if(seen.has(k))continue;seen.add(k);const im=document.createElement('img');im.src='/api/tex.png?region='+region+'&key='+k+'&s=64';im.title=(texMap[k]||[k])[0];im.dataset.key=k;im.className=k==selKey?'cur':'';im.onclick=()=>{selKey=k;for(const x of G.children)x.className=x.dataset.key==k?'cur':''};G.append(im)}
+ refreshTexGrid()}
+gizmo.addEventListener('objectChange',()=>{if(sel&&sel.type==='obj'&&sel.obj.dupOf){Object.assign(sel.obj._op,dupData(sel.obj));saveOps()}else if(sel&&sel.type==='obj'&&sel.obj.inst){upsertInst(sel.obj)}else if(sel&&sel.type==='obj'){const g=sel.obj.group,sn=+$('snap').value;if(sn>0&&gizmo.getMode()==='translate'){g.position.x=Math.round(g.position.x/sn)*sn;g.position.y=Math.round(g.position.y/sn)*sn}upsertTransform(sel.id,sel.obj.entry.name,g,sel.obj.center)}else if(sel&&sel.type==='prev'){syncPrev(sel.op)}});
+function selectPoly(sid,poly,add){if(!add)deselect();else{gizmo.detach()}sel={type:'poly'};if(!selPolys.some(p=>p.sid===sid&&p.poly===poly))selPolys.push({sid,poly});rebuildSel();$('info').textContent=selPolys.length+' collision polygon(s) selected (section '+sid+', poly '+poly+')\nPress Delete to remove them (frees wall slots).'}
+function setMode(m){gizmo.setMode(m);for(const [id,mm] of [['m_t','translate'],['m_r','rotate'],['m_s','scale']])$(id).classList.toggle('on',mm===m)}
+$('m_t').onclick=()=>setMode('translate');$('m_r').onclick=()=>setMode('rotate');$('m_s').onclick=()=>setMode('scale');
+function doDelete(){if(sel&&sel.type==='multi'){multiDelete();return}if(sel&&sel.type==='paste'){undo(ops.indexOf(sel.op));return}if(sel&&sel.type==='obj'&&sel.obj.dupOf){undo(ops.indexOf(sel.obj._op))}
+ else if(sel&&sel.type==='obj'&&sel.obj.inst){const o=sel.obj;o.group.position.z-=2000;upsertInst(o);o.group.visible=false;deselect()}
+ else if(sel&&sel.type==='obj'){const o=sel.obj;ops=ops.filter(x=>!(x.op==='transform_object'&&x.id===sel.id));ops.push({op:'remove_object',region,id:sel.id,name:o.entry.name});o.group.visible=false;deselect();saveOps()}
+ else if(sel&&sel.type==='poly'&&selPolys.length){const by={};for(const p of selPolys)(by[p.sid]=by[p.sid]||[]).push(p.poly);for(const s in by){ops.push({op:'remove_polys',region,sid:+s,polys:by[s]});for(const p of by[s])deletedPolys.add(s+':'+p)}deselect();rebuildDeleted();saveOps()}
+ else if(sel&&sel.type==='prev'){undo(ops.indexOf(sel.op))}}
+$('del').onclick=doDelete;
+function doDup(){if(!(sel&&sel.type==='obj'&&sel.obj.inst)){status('select a placed building/prop first (duplicate reuses a small prop placement in the same section)');return}
+ const src=sel.obj,i=src.inst;const g=src.group.clone(false);g.position.x+=8;g.position.y+=8;const meshes=[];for(const m of src.meshes){const c=new THREE.Mesh(m.geometry,m.material.clone());c.userData={...m.userData,id:'d'+(++dupN)};g.add(c);meshes.push(c);pickables.push(c)}
+ const id='d'+dupN;g.userData={id};layerGroups[i.cat].add(g);const o={group:g,meshes,inst:{...i,dup:true},entry:src.entry,center:[0,0,0],lbox:src.lbox,dupOf:i};objs.set(id,o);
+ const op={op:'duplicate_instance',region,sec:i.sec,off:i.off,name:i.name,_obj:o};o._op=op;ops.push(op);o.group.updateMatrix();Object.assign(op,dupData(o));selectObj(id);saveOps();status('duplicate added: drag it where you want; it uses a spare small-prop placement')}
+let dupN=0;
+function dupData(o){const n=instOp(o);return {R:n.R,T:n.T,aabb:n.aabb}}
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.ctrlKey||e.metaKey){const k=e.key.toLowerCase();if(k==='z'){undoLast();e.preventDefault()}else if(k==='c'){doCopy();e.preventDefault()}else if(k==='v'){doPaste();e.preventDefault()}else if(k==='g'){(e.shiftKey?doUngroup:doGroup)();e.preventDefault()}return}if(e.key==='d')doDup();if(e.key==='Delete'||e.key==='Backspace')doDelete();if(e.key==='w')setMode('translate');if(e.key==='e')setMode('rotate');if(e.key==='r')setMode('scale');if(e.key==='Enter'&&tool==='road')finishRoad();if(e.key==='Escape'){setTool(null);deselect()}});
+
+// ---------------- picking & tools ----------------
+const ray=new THREE.Raycaster(),mv=new THREE.Vector2();let down=null;
+function setTool(t){tool=tool===t?null:t;if(tool!=='verts')vExit();wallP0=null;toolOverlay.clear();roadPts.length=0;quadPts.length=0;measP=[];curveP=[];curvePrev=null;for(const [id,k] of [['t_quad','quad'],['t_road','road'],['t_wall','wall'],['bmeas','measure'],['t_curve','curve'],['t_vert','verts'],['t_mark','marker']])$(id).classList.toggle('on',tool===k);status(tool?({curve:'curve: click the start point',quad:'quad: click 4 corners on the ground',road:'road: click points along the path, Enter or "Finish road"',wall:'wall: click two points',marker:'shop marker: choose a type in the options bar, click the ground to place it',verts:'vertices: click a terrain/road/wall object, then click its vertices (Shift adds) and drag the arrows'})[tool]:'')}
+function pickPoint(e){const r=cv.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mv,cam);
+ const vis=pickables.filter(m=>{let p=m;while(p){if(!p.visible)return null;p=p.parent}return true});const hits=ray.intersectObjects(vis,false);const h=hits.find(x=>x.object.userData.coll==='ground'||x.object.userData.coll==='ground_new')||hits.find(x=>x.object.userData.id!==undefined)||null;
+ if(h)return h.point.clone();const pl=new THREE.Plane(new THREE.Vector3(0,0,1),-orbit.target.z),pt=new THREE.Vector3();return ray.ray.intersectPlane(pl,pt)?pt:null}
+cv.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY]});
+cv.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>4||e.button!==0)return;
+ if(tool==='verts'){vertClick(e);return}
+ if(tool==='marker'){const p=pickPoint(e);if(p)addMarkerAt(p);return}
+ if(tool){let p=pickPoint(e);if(p){const sr=snapPick(p,e);p=sr.pt}if(p)toolClick(p);return}
+ if(gizmo.dragging)return;const r=cv.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mv,cam);
+ const vis=pickables.filter(m=>{let p=m;while(p){if(!p.visible)return false;p=p.parent}return true});const hits=ray.intersectObjects(vis,false);
+ if(!hits.length){if(!e.shiftKey)deselect();return}const h=hits.find(x=>x.object.userData.mk&&x.distance<=hits[0].distance+12)||hits.find(x=>x.object.userData.prevId&&x.distance<=hits[0].distance+0.5)||hits[0],u=h.object.userData;
+
+ if(u.mk){selectMarker(u.mk);return}
+ if(u.prevId){const po=prevById.get(u.prevId);if(po&&po.op==='paste'){selectPaste(po);status('pasted copy selected: drag the arrows (W move / E rotate / R scale)')}else if(po){selectPrev(po);status('moving '+(po.op==='add_quad'?'quad':'road')+': drag the arrows (W move / E rotate / R scale)')}return}
+ if(u.coll)selectPoly(u.pid[2*h.faceIndex],u.pid[2*h.faceIndex+1],e.shiftKey);else if(u.id!==undefined){const g=groupOf(u.id);if(g&&g.ids.length>1)selectMulti(g.ids.filter(i=>objs.has(i)),false);else selectObj(u.id,u.key)}});
+function marker(p,c=0xff3030,r=0.9){const m=new THREE.Mesh(new THREE.SphereGeometry(r),new THREE.MeshBasicMaterial({color:c,depthTest:false}));m.position.copy(p);toolOverlay.add(m)}
+function sectionAt(x,y){let best=null;for(const s of info.sections){const [ox,oy,W,H]=s.grid;if(x>=ox&&x<=ox+W*32&&y>=oy&&y<=oy+H*32&&(!best||W*H<best.W*best.H))best={sid:s.sid,W,H}}return best?best.sid:null}
+let curveP=[],curvePrev=null;
+function bezier(a,c,b){const len=a.distanceTo(c)+c.distanceTo(b),n=Math.max(6,Math.ceil(len/7)),out=[];for(let i=0;i<=n;i++){const t=i/n,u=1-t;out.push(new THREE.Vector3(u*u*a.x+2*u*t*c.x+t*t*b.x,u*u*a.y+2*u*t*c.y+t*t*b.y,a.z+(b.z-a.z)*t))}return out}
+function curvePreview(pts){if(curvePrev){toolOverlay.remove(curvePrev);curvePrev.geometry.dispose()}if(!pts||pts.length<2){curvePrev=null;return}const g=new THREE.BufferGeometry().setFromPoints(pts.map(q=>q.clone().add(new THREE.Vector3(0,0,0.4))));curvePrev=new THREE.Line(g,new THREE.LineBasicMaterial({color:0x4ad0ff,depthTest:false}));toolOverlay.add(curvePrev)}
+cv.addEventListener('pointermove',e=>{if(tool!=='curve'||!curveP.length||mq||e.buttons)return;const p=pickPoint(e);if(!p)return;if(curveP.length===1)curvePreview([curveP[0],p]);else curvePreview(bezier(curveP[0],curveP[1],p))});
+function toolClick(p){
+ if(tool==='curve'){curveP.push(p.clone());marker(p,curveP.length===2?0xffd24a:0x4ad0ff,1.2);
+  if(curveP.length===3){const pts=bezier(curveP[0],curveP[1],curveP[2]);const op={op:'add_road',region,points:pts.map(q=>[q.x,q.y,q.z]),width:+$('rw').value,uv_len:+$('ruv').value,key:curTex,collision:$('rcol').checked,curve:true};ops.push(op);makePreview(op);curveP=[];toolOverlay.clear();curvePrev=null;saveOps();status('curved road added ('+pts.length+' points)')}
+  else status(curveP.length===1?'curve: now click the bend point (the road bends toward it)':'curve: move the mouse to shape the curve, click the end point');return}
+ if(tool==='measure'){measP.push(p.clone());marker(p,0xffd24a,0.6);if(measP.length===2){const d=measP[0].distanceTo(measP[1]);const g=new THREE.BufferGeometry().setFromPoints(measP);toolOverlay.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:0xffd24a,depthTest:false})));status('distance '+d.toFixed(1)+' m (horizontal '+Math.hypot(measP[1].x-measP[0].x,measP[1].y-measP[0].y).toFixed(1)+' m, height '+(measP[1].z-measP[0].z).toFixed(1)+' m)');measP=[]}else status('measure: click the second point');return}
+ if(tool==='wall'){if(!wallP0){wallP0=p.clone();marker(p);status('wall: pick the second point')}else{const p1=p,sid=sectionAt(p1.x,p1.y)??sectionAt(wallP0.x,wallP0.y);const kind=$('wallkind').value;
+   if(sid===null){status('no collision section covers that point');return}
+   ops.push({op:'add_wall',region,sid,kind,p0:[wallP0.x,wallP0.y],p1:[p1.x,p1.y],z:[Math.min(wallP0.z,p1.z),Math.min(wallP0.z,p1.z)+3]});
+   const h=kind==='tall'?25:3,a=wallP0,b=p1,z0=Math.min(a.z,b.z),geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array([a.x,a.y,z0,b.x,b.y,z0,b.x,b.y,z0+h,a.x,a.y,z0,b.x,b.y,z0+h,a.x,a.y,z0+h]),3));
+   const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0xff3030,transparent:true,opacity:0.5,side:THREE.DoubleSide}));prevGroup.add(m);ops[ops.length-1]._mesh=m;wallP0=null;saveOps();status('wall added to the edit list')}}
+ else if(tool==='quad'){quadPts.push(p.clone());marker(p);if(quadPts.length===4){const op={op:'add_quad',region,corners:quadPts.map(q=>[q.x,q.y,q.z]),key:curTex,collision:$('rcol').checked};ops.push(op);makePreview(op);quadPts.length=0;toolOverlay.clear();saveOps();status('quad added')}}
+ else if(tool==='road'){roadPts.push(p.clone());marker(p,0x4ad0ff);status('road: '+roadPts.length+' point(s) — Enter to finish')}}
+function finishRoad(){if(roadPts.length<2){status('road needs at least 2 points');return}const op={op:'add_road',region,points:roadPts.map(q=>[q.x,q.y,q.z]),width:+$('rw').value,uv_len:+$('ruv').value,key:curTex,collision:$('rcol').checked};ops.push(op);makePreview(op);roadPts.length=0;toolOverlay.clear();saveOps();status('road added')}
+$('t_quad').onclick=()=>setTool('quad');$('t_road').onclick=()=>setTool('road');$('t_road_end').onclick=finishRoad;$('t_wall').onclick=()=>setTool('wall');
+
+// ---------------- previews of new geometry ----------------
+function ribbon(op){const P=op.points.map(p=>new THREE.Vector3(...p));const L=[],R=[];const hw=op.width/2;for(let i=0;i<P.length;i++){const a=P[Math.max(i-1,0)],b=P[Math.min(i+1,P.length-1)];const d=b.clone().sub(a).setZ(0).normalize();const n=new THREE.Vector3(-d.y,d.x,0);L.push(P[i].clone().addScaledVector(n,hw));R.push(P[i].clone().addScaledVector(n,-hw))}
+ const arr=[],uv=[];let s=0;for(let i=0;i<P.length-1;i++){const v0=s/op.uv_len;s+=P[i].distanceTo(P[i+1]);const v1=s/op.uv_len;const q=[L[i],R[i],R[i+1],L[i],R[i+1],L[i+1]],u=[[0,v0],[1,v0],[1,v1],[0,v0],[1,v1],[0,v1]];q.forEach((v,j)=>{arr.push(v.x,v.y,v.z+0.05);uv.push(...u[j])})}return {arr:new Float32Array(arr),uv:new Float32Array(uv)}}
+let prevSeq=0;const prevById=new Map();
+function makePreview(op){let geo=new THREE.BufferGeometry();
+ if(op.op==='add_road'){const r=ribbon(op);geo.setAttribute('position',new THREE.BufferAttribute(r.arr,3));geo.setAttribute('uv',new THREE.BufferAttribute(r.uv,2))}
+ else if(op.op==='add_quad'){const c=op.corners.map(p=>new THREE.Vector3(...p));const arr=[];for(const i of [0,1,2,0,2,3])arr.push(c[i].x,c[i].y,c[i].z+0.05);geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(arr),3));geo.setAttribute('uv',new THREE.BufferAttribute(new Float32Array([0,0,1,0,1,1,0,0,1,1,0,1]),2))}
+ else return;
+ const map=curTex?getTex(op.key):null;const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:map?0xffffff:0x44bbff,map:map,side:THREE.DoubleSide,transparent:true,opacity:0.92}));if(op.op==='add_quad'||op.op==='add_road'){const pts=op.op==='add_quad'?op.corners:op.points,c=[0,0,0];for(const q of pts){c[0]+=q[0];c[1]+=q[1];c[2]+=q[2]}c[0]/=pts.length;c[1]/=pts.length;c[2]/=pts.length;
+  const pa=geo.attributes.position.array;for(let i=0;i<pa.length;i+=3){pa[i]-=c[0];pa[i+1]-=c[1];pa[i+2]-=c[2]}geo.attributes.position.needsUpdate=true;geo.computeBoundingSphere();m.position.set(c[0],c[1],c[2]);
+  op._edges=null;op._loc=pts.map(q=>[q[0]-c[0],q[1]-c[1],q[2]-c[2]]);const id=++prevSeq;prevById.set(id,op);m.userData={prevId:id};pickables.push(m)}
+ prevGroup.add(m);op._mesh=m}
+function syncPrev(op){const m=op._mesh;if(!m)return;if(op.op==='add_quad'||op.op==='add_road'){m.updateMatrixWorld(true);const src=op.op==='add_quad'?'corners':'points';op[src]=op._loc.map(q=>{const v=new THREE.Vector3(q[0],q[1],q[2]).applyMatrix4(m.matrixWorld);return [v.x,v.y,v.z]});saveOps();return}if(op.op==='add_box'){op.center=m.position.toArray();op.size=m.scale.toArray();op.quaternion=m.quaternion.toArray()}saveOps()}
+
+// ---------------- geometry snapping ----------------
+const snapMark=new THREE.Mesh(new THREE.SphereGeometry(1.1),new THREE.MeshBasicMaterial({color:0xffe033,depthTest:false,transparent:true,opacity:.95}));snapMark.renderOrder=1000;snapMark.visible=false;scene.add(snapMark);
+
+function boundaryEdges(arr,ox,oy,oz){const cnt=new Map(),segs=[];const K=(x,y,z)=>Math.round(x*50)+','+Math.round(y*50)+','+Math.round(z*50);
+ for(let i=0;i+8<arr.length;i+=9){for(let e=0;e<3;e++){const a=i+e*3,b=i+((e+1)%3)*3;const ka=K(arr[a],arr[a+1],arr[a+2]),kb=K(arr[b],arr[b+1],arr[b+2]);if(ka===kb)continue;const key=ka<kb?ka+'|'+kb:kb+'|'+ka;const r=cnt.get(key);if(r)r.n++;else{const o={n:1,s:[arr[a]+ox,arr[a+1]+oy,arr[a+2]+oz,arr[b]+ox,arr[b+1]+oy,arr[b+2]+oz]};cnt.set(key,o);segs.push(o)}}}
+ const out=[];for(const o of segs)if(o.n===1)out.push(...o.s);return new Float32Array(out)}
+function nearOnSeg(a,i,p){const ax=a[i],ay=a[i+1],az=a[i+2],bx=a[i+3],by=a[i+4],bz=a[i+5],dx=bx-ax,dy=by-ay,L=dx*dx+dy*dy;let t=L>1e-9?((p.x-ax)*dx+(p.y-ay)*dy)/L:0;t=Math.max(0,Math.min(1,t));return [ax+dx*t,ay+dy*t,az+(bz-az)*t]}
+function snapCands(p,rad,excl){const out=[],r2=rad*rad;
+ for(const m of pickables){const u=m.userData;if((u.coll==='ground'||u.coll==='ground_new')&&m.visible){const a=m.geometry.attributes.position.array;for(let i=0;i<a.length;i+=3){const dx=a[i]-p.x,dy=a[i+1]-p.y;if(dx*dx+dy*dy<r2)out.push([a[i],a[i+1],a[i+2],'ground-collision corner'])}
+   if(!u._edges)u._edges=boundaryEdges(a,0,0,0);const E=u._edges;for(let i=0;i<E.length;i+=6){if(Math.min(E[i],E[i+3])>p.x+rad||Math.max(E[i],E[i+3])<p.x-rad||Math.min(E[i+1],E[i+4])>p.y+rad||Math.max(E[i+1],E[i+4])<p.y-rad)continue;const q=nearOnSeg(E,i,p),dx=q[0]-p.x,dy=q[1]-p.y;if(dx*dx+dy*dy<r2)out.push([q[0],q[1],q[2],'ground edge'])}}}
+ for(const [id,op] of prevById){if(op===excl||!op._mesh||!op._mesh.parent)continue;if(op.op==='add_quad'){for(const c of op.corners){const dx=c[0]-p.x,dy=c[1]-p.y;if(dx*dx+dy*dy<r2)out.push([c[0],c[1],c[2],'quad corner'])}
+   for(let k=0;k<4;k++){const A=op.corners[k],B=op.corners[(k+1)%4],q=nearOnSeg([A[0],A[1],A[2],B[0],B[1],B[2]],0,p),dx=q[0]-p.x,dy=q[1]-p.y;if(dx*dx+dy*dy<r2)out.push([q[0],q[1],q[2],'quad side'])}}
+  else{const m=op._mesh,a=m.geometry.attributes.position.array,o=m.position;for(let i=0;i<a.length;i+=3){const x=a[i]+o.x,y=a[i+1]+o.y;const dx=x-p.x,dy=y-p.y;if(dx*dx+dy*dy<r2)out.push([x,y,a[i+2]+o.z,'road corner'])}
+   if(!op._edges)op._edges=boundaryEdges(a,o.x,o.y,o.z);const E=op._edges;for(let i=0;i<E.length;i+=6){const q=nearOnSeg(E,i,p),dx=q[0]-p.x,dy=q[1]-p.y;if(dx*dx+dy*dy<r2)out.push([q[0],q[1],q[2],'road side'])}}}
+ const v=new THREE.Vector3();for(const [id,o] of objs){if(!o.group.visible)continue;const b=o.entry&&o.entry.bbox;if(b&&(p.x<b[0]-rad||p.x>b[3]+rad||p.y<b[1]-rad||p.y>b[4]+rad))continue;if(!['terrain','road'].includes(o.entry&&o.entry.cat))continue;o.group.updateMatrixWorld(true);
+  const a=o.meshes[0].geometry.attributes.position.array;for(let i=0;i<a.length;i+=3){v.set(a[i],a[i+1],a[i+2]).applyMatrix4(o.group.matrixWorld);const dx=v.x-p.x,dy=v.y-p.y;if(dx*dx+dy*dy<r2)out.push([v.x,v.y,v.z,'model vertex'])}}
+ return out}
+function snapPick(p,e,excl){if(!$('snapg').checked||(e&&e.altKey))return {pt:p,kind:null};const cs=snapCands(p,9,excl);if(!cs.length)return {pt:p,kind:null};const r=cv.getBoundingClientRect(),sp=p.clone().project(cam);const px=(sp.x+1)/2*r.width,py=(1-sp.y)/2*r.height;let best=null,bd=18*18,v=new THREE.Vector3();
+ // prefer the pixel-nearest candidate; ties go to explicit geometry (quad/road) over the ground mesh
+ for(const c of cs){v.set(c[0],c[1],c[2]).project(cam);if(v.z>1)continue;const pen=/side|edge/.test(c[3])?10:(c[3]==='ground-collision corner'?2:0);const d=(Math.sqrt(((v.x+1)/2*r.width-px)**2+((1-v.y)/2*r.height-py)**2)+pen)**2;if(d<bd){bd=d;best=c}}
+ return best?{pt:new THREE.Vector3(best[0],best[1],best[2]),kind:best[3]}:{pt:p,kind:null}}
+let snapT=0;cv.addEventListener('pointermove',e=>{if(!['quad','road','curve','wall'].includes(tool)||e.buttons){snapMark.visible=false;return}const t=performance.now();if(t-snapT<50)return;snapT=t;const p=pickPoint(e);if(!p){snapMark.visible=false;return}const r=snapPick(p,e);if(r.kind){snapMark.position.copy(r.pt);snapMark.visible=true;status('snap → '+r.kind)}else snapMark.visible=false});
+function weldCorners(op,rad){if(op.op!=='add_quad'||!op._mesh)return 0;let n=0;
+ for(let k=0;k<4;k++){const c=op.corners[k];const cs=snapCands(new THREE.Vector3(c[0],c[1],c[2]),rad,op);let best=null,bd=rad*rad;for(const q of cs){if(/^model/.test(q[3]))continue;const pen=/^ground/.test(q[3])?(/edge/.test(q[3])?1.0:0.5):(/side/.test(q[3])?0.4:0);const d=(Math.hypot(q[0]-c[0],q[1]-c[1])+pen)**2;if(d<bd){bd=d;best=q}}
+  if(best&&(Math.abs(best[0]-c[0])+Math.abs(best[1]-c[1])+Math.abs(best[2]-c[2]))>1e-4){op.corners[k]=[best[0],best[1],best[2]];n++}}
+ if(n){const old=op._mesh;prevGroup.remove(old);const i=pickables.indexOf(old);if(i>=0)pickables.splice(i,1);old.geometry.dispose();makePreview(op);if(sel&&sel.type==='prev'&&sel.op===op){sel.mesh=op._mesh;gizmo.attach(op._mesh)}saveOps()}return n}
+function weldPrev(op,rad){const key=op.op==='add_quad'?'corners':'points';const pts=op.op==='add_quad'?op.corners:[op.points[0],op.points[op.points.length-1]];let best=null,bd=rad*rad;
+ for(const c of pts){const cs=snapCands(new THREE.Vector3(c[0],c[1],c[2]),rad,op);for(const q of cs){if(/^model/.test(q[3]))continue;const d=(q[0]-c[0])**2+(q[1]-c[1])**2;if(d<bd){bd=d;best=[q[0]-c[0],q[1]-c[1],q[2]-c[2],q[3]]}}}
+ if(!best||!op._mesh)return false;op._mesh.position.x+=best[0];op._mesh.position.y+=best[1];op._mesh.position.z+=best[2];syncPrev(op);status('welded to '+best[3]+' ('+Math.hypot(best[0],best[1]).toFixed(2)+' m move)');return true}
+gizmo.addEventListener('dragging-changed',e=>{if(e.value||!sel||sel.type!=='prev'||!$('snapg').checked)return;const op=sel.op;if(op.op==='add_quad'||op.op==='add_road')weldPrev(op,1.6)});
+$('weldall').onclick=()=>{let n=0;for(let pass=0;pass<3;pass++)for(const o of ops)if(o.op==='add_quad')n+=weldCorners(o,2.5);status('welded '+n+' quad corner(s) onto their neighbours')};
+addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='j'||e.key==='J'){if(sel&&sel.type==='prev'&&(sel.op.op==='add_quad'||sel.op.op==='add_road')){if(!(sel.op.op==='add_quad'?weldCorners(sel.op,3.5):weldPrev(sel.op,3.5)))status('nothing to weld to within 3.5 m');else status('corners welded to neighbouring quads / road edges')}}});
+
+// ---------------- shops / garages / spawn markers ----------------
+const markerGroup=new THREE.Group();scene.add(markerGroup);let mkBase=[],mkTypes=[],mkSeq=0;const mkById=new Map();
+const MK_COL=n=>/CRIB/.test(n)?0xffcc33:/Starting/.test(n)?0x44dd66:/Line/.test(n)?0xdd44dd:/CAR_LOT/.test(n)?0xff8844:/PERF/.test(n)?0xff4444:/BODYSHOP/.test(n)?0x44aaff:/GRAPHICS/.test(n)?0xcc66ff:0x33ddcc;
+function mkLabel(txt){const c=document.createElement('canvas');c.width=256;c.height=48;const x=c.getContext('2d');x.font='bold 26px sans-serif';x.fillStyle='rgba(0,0,0,.65)';x.fillRect(0,0,256,48);x.fillStyle='#fff';x.textAlign='center';x.fillText(txt,128,34);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false,transparent:true}));sp.scale.set(26,5,1);sp.position.set(0,0,12);sp.renderOrder=999;return sp}
+function addMarkerVisual(m){const g=new THREE.Group();const col=MK_COL(m.name);
+ const cyl=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,8,16,1,true),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false}));cyl.rotation.x=Math.PI/2;cyl.position.z=4;
+ const arrow=new THREE.Mesh(new THREE.ConeGeometry(1.6,4,12),new THREE.MeshBasicMaterial({color:col}));arrow.rotation.z=-Math.PI/2;arrow.position.set(4,0,1);
+ g.add(cyl,arrow,mkLabel(m.name));g.position.set(m.pos[0],m.pos[1],m.pos[2]);g.rotation.z=(m.angle/65536)*Math.PI*2;const id=++mkSeq;m.id=id;mkById.set(id,m);m.group=g;
+ for(const ch of [cyl,arrow]){ch.userData={mk:id};pickables.push(ch)}markerGroup.add(g)}
+function mkClear(){for(const m of mkById.values()){markerGroup.remove(m.group);m.group.traverse(o=>{const k=pickables.indexOf(o);if(k>=0)pickables.splice(k,1)})}mkById.clear()}
+async function loadMarkers(){mkClear();let j;try{j=await (await fetch('/api/markers',{method:'POST',body:JSON.stringify({region})})).json()}catch(e){return}mkBase=j.markers;mkTypes=j.types;
+ const sel_=$('mktype');if(sel_&&!sel_.options.length){for(const t of mkTypes.filter(n=>!/Starting|Line/.test(n))){const o=document.createElement('option');o.textContent=t;sel_.append(o)}}
+ for(const m0 of mkBase){const m={...m0,base:true};const mv=ops.find(o=>o.op==='move_marker'&&o.hash===m.hash&&(o.index||0)===m.index&&(o.region||'L4RA')===region);if(mv){m.pos=mv.pos.slice();if(mv.angle!=null)m.angle=mv.angle}addMarkerVisual(m)}
+ for(const o of ops)if(o.op==='add_marker'&&(o.region||'L4RA')===region){const m={name:o.name,hash:o.hash,pos:o.pos.slice(),angle:o.angle||0,index:-1,op:o};addMarkerVisual(m);o._mk=m}
+ markerGroup.visible=$('showmk').checked}
+function markerToOp(m){const g=m.group,ang=Math.round((((g.rotation.z/(Math.PI*2))%1)+1)%1*65536)&0xffff,pos=[g.position.x,g.position.y,g.position.z];m.pos=pos;m.angle=ang;
+ if(m.op){m.op.pos=pos;m.op.angle=ang}else{let o=ops.find(o=>o.op==='move_marker'&&o.hash===m.hash&&(o.index||0)===m.index&&(o.region||'L4RA')===region);if(!o){o={op:'move_marker',region,hash:m.hash,index:m.index,name:m.name};ops.push(o)}o.pos=pos;o.angle=ang}saveOps();renderOps()}
+function selectMarker(id){const m=mkById.get(id);if(!m)return;deselect();sel={type:'marker',m};gizmo.attach(m.group);$('info').textContent=m.name+' — '+(/Starting|Line/.test(m.name)?'spawn / line marker':'shop / garage trigger')+'\\nMove it with the gizmo (W), turn it with E. This is the spot where the game shows the shop prompt. Build writes the new position into the game.'}
+function addMarkerAt(p){const nm=$('mktype').value;if(!nm)return; const h=mkBase.find(b=>b.name===nm);if(!h){status('unknown marker type');return}const op={op:'add_marker',region,hash:h.hash,name:nm,pos:[p.x,p.y,p.z],angle:0};ops.push(op);const m={name:nm,hash:h.hash,pos:op.pos.slice(),angle:0,index:-1,op};addMarkerVisual(m);op._mk=m;saveOps();renderOps();selectMarker(m.id);status('added a "'+nm+'" marker: move it into place with the gizmo')}
+gizmo.addEventListener('objectChange',()=>{if(sel&&sel.type==='marker')markerToOp(sel.m)});
+let boxN=0;
+$('t_box').onclick=()=>{const t=orbit.target;const op={op:'add_box',region,center:[t.x,t.y,t.z],size:[10,10,4],quaternion:[0,0,0,1],color:0xFFB0B0B0,key:curTex,solid:false};
+ const map=curTex?getTex(curTex):null;const m=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial({color:map?0xffffff:0xb0b0b0,map:map}));m.position.set(...op.center);m.scale.set(...op.size);prevGroup.add(m);op._mesh=m;ops.push(op);selectPrev(op);saveOps()};
+function selectPrev(op){deselect();sel={type:'prev',op,mesh:op._mesh};gizmo.attach(op._mesh)}
+
+// ---------------- OBJ import ----------------
+function parseOBJ(text,yup,dbl){const V=[],T=[],tris=[],uvs=[];for(const ln of text.split('\n')){const p=ln.trim().split(/\s+/);if(p[0]==='v')V.push([+p[1],+p[2],+p[3]]);else if(p[0]==='vt')T.push([+p[1],+p[2]]);
+  else if(p[0]==='f'){const ix=p.slice(1).map(s=>{const a=s.split('/');const vi=+a[0],ti=a[1]?+a[1]:0;return [vi<0?V.length+vi:vi-1,ti?(ti<0?T.length+ti:ti-1):-1]});for(let i=1;i<ix.length-1;i++){const tri=[ix[0],ix[i],ix[i+1]];const pos=[],uv=[];for(const [vi,ti] of tri){const v=V[vi];pos.push(yup?v[0]:v[0],yup?-v[2]:v[1],yup?v[1]:v[2]);const t=ti>=0?T[ti]:[0,0];uv.push(t[0],1-t[1])}tris.push(pos);uvs.push(uv)}}}
+ return {tris,uvs}}
+$('t_obj').onclick=()=>$('objf').click();
+$('objf').onchange=async e=>{const f=e.target.files[0];if(!f)return;const text=await f.text();const {tris,uvs}=parseOBJ(text,$('objy').checked);if(!tris.length){status('no faces found in that OBJ');return}
+ const sc=+$('objs').value||1,t=orbit.target;const pos=new Float32Array(tris.length*9),uv=new Float32Array(tris.length*6);tris.forEach((tr,i)=>{for(let k=0;k<9;k++)pos[i*9+k]=tr[k]*sc});uvs.forEach((u,i)=>{for(let k=0;k<6;k++)uv[i*6+k]=u[k]});
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.BufferAttribute(uv,2));geo.computeVertexNormals();
+ const map=curTex?getTex(curTex):null;const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:map?0xffffff:0xc0c0c0,map:map,side:THREE.DoubleSide}));m.position.set(t.x,t.y,t.z);prevGroup.add(m);
+ const op={op:'add_mesh',region,key:curTex,double:$('obj2').checked,color:0xFFB0B0B0};op._mesh=m;op._geo=geo;ops.push(op);selectPrev(op);saveOps();status('model added ('+tris.length+' triangles) — move it with the gizmo; needs '+tris.length*(op.double?6:3)+' index slots of host capacity');e.target.value=''};
+function bakeMesh(op){const m=op._mesh;m.updateMatrixWorld(true);const p=op._geo.attributes.position.array,uv=op._geo.attributes.uv.array,v=new THREE.Vector3(),tris=[],uvs=[];for(let i=0;i<p.length;i+=9){const a=[];for(let k=0;k<3;k++){v.set(p[i+k*3],p[i+k*3+1],p[i+k*3+2]).applyMatrix4(m.matrixWorld);a.push(v.x,v.y,v.z)}tris.push(a)}for(let i=0;i<uv.length;i+=6)uvs.push(Array.from(uv.slice(i,i+6)));op.tris=tris;op.uvs=uvs}
+
+// ---------------- texture browser ----------------
+let texList=[];
+function refreshTexGrid(){const g=$('tgrid');const q=$('tq').value.toLowerCase();const onlySel=$('tused').checked&&sel&&sel.obj;const used=new Set(sel&&sel.obj?sel.obj.meshes.map(m=>m.userData.key):[]);
+ let list=texList.filter(t=>(!q||t[1].toLowerCase().includes(q))&&(!onlySel||used.has(t[0])));$('tcount').textContent='('+list.length+' of '+texList.length+')';list=list.slice(0,180);g.innerHTML='';
+ for(const t of list){const im=document.createElement('img');im.loading='lazy';im.src='/api/tex.png?region='+region+'&key='+t[0]+'&s=48';im.title=t[1]+'  '+t[2]+'×'+t[3];im.className=(t[0]===curTex?'cur ':'')+(used.has(t[0])?'used':'');im.onclick=()=>{curTex=t[0];$('texinfo').textContent='chosen: '+t[1]+'  ('+t[2]+'×'+t[3]+', '+({8:'P8',34:'DXT1',36:'DXT3'}[t[4]]||t[4])+', key '+t[0]+')\nnew roads/quads/boxes/models use it';refreshTexGrid()};g.append(im)}}
+$('tq').oninput=refreshTexGrid;$('tused').onchange=refreshTexGrid;
+$('tapply').onclick=()=>{if(!curTex){status('choose a texture first');return}if(!sel||sel.type!=='obj'){status('select an object (and optionally a surface) first');return}const from=selKey;if(!from){status('that object has no texture slot');return}
+ ops.push({op:'set_texture',region,id:sel.id,from_key:from,to_key:curTex});for(const m of sel.obj.meshes)if(m.userData.key===from){m.userData.key=curTex;if($('texs').checked){m.material.map=getTex(curTex);m.material.color.setHex(0xffffff);m.material.needsUpdate=true}}selKey=curTex;saveOps();selectObj(sel.id,curTex)};
+$('trepl').onclick=()=>{if(!curTex){status('choose the texture to overwrite first');return}$('timg').click()};
+$('timg').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const url=rd.result;ops=ops.filter(o=>!(o.op==='replace_texture'&&o.key===curTex&&(o.region||'L4RA')===region));ops.push({op:'replace_texture',region,key:curTex,image:url.split(',')[1]});texUrl[curTex]=url;refreshKey(curTex);saveOps();status('texture will be overwritten by your image (same size/format, all mip levels)')};rd.readAsDataURL(f);e.target.value=''};
+
+
+// ---------------- brand-new textures ----------------
+function crc32(s){let c,t=[];for(let n=0;n<256;n++){c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}let r=0xFFFFFFFF;for(const ch of s)r=t[(r^ch.charCodeAt(0))&255]^(r>>>8);return (r^0xFFFFFFFF)>>>0}
+$('tnew').onclick=()=>$('tnimg').click();
+$('tnimg').onchange=e=>{const f=e.target.files[0];if(!f)return;let nm=prompt('Name for the new texture (letters, digits, _ ; max 23 chars):',f.name.replace(/\.[^.]*$/,'').toUpperCase().replace(/[^A-Z0-9_]/g,'_').slice(0,23));if(!nm){e.target.value='';return}nm=nm.toUpperCase().replace(/[^A-Z0-9_]/g,'_').slice(0,23);
+ const [w,h,fmt]=$('tnsz').value.split(',').map(Number),key=crc32(nm);if(texMap[key]){status('a texture with that name/key already exists');e.target.value='';return}
+ const rd=new FileReader();rd.onload=()=>{const url=rd.result;ops.push({op:'add_texture',region,name:nm,w,h,fmt,key,image:url.split(',')[1]});const t=[key,nm,w,h,fmt];texList.unshift(t);texMap[key]=t;texUrl[key]=url;curTex=key;refreshTexGrid();$('texinfo').textContent='NEW texture '+nm+' ('+w+'×'+h+') chosen: select an object and press "Apply to selection". It is added to the track file when you build.';saveOps()};rd.readAsDataURL(f);e.target.value=''};
+// ---------------- minimap ----------------
+const mini=$('mini'),mx=mini.getContext('2d');let mb=null;
+function mapXY(x,y){const w=mini.width,h=mini.height;const [x0,x1,y0,y1]=mb;const s=Math.min(w/(x1-x0),h/(y1-y0));return [(x-x0)*s,h-(y-y0)*s,s]}
+const pts=b=>dec(b,Float32Array);
+function drawMini(){if(!over||!mb)return;mx.clearRect(0,0,mini.width,mini.height);mx.fillStyle='#0c0f15';mx.fillRect(0,0,mini.width,mini.height);
+ const draw=(arr,col,sz)=>{mx.fillStyle=col;for(let i=0;i<arr.length;i+=2){const [px,py]=mapXY(arr[i],arr[i+1]);mx.fillRect(px,py,sz,sz)}};
+ if(layerGroups.ground.visible)draw(over._ground,'#2f7a4a',1.4);if(layerGroups.wall_mid.visible)draw(over._mid,'#f0a030',1.8);if(layerGroups.wall_tall.visible)draw(over._tall,'#a03030',1.4);
+ if(layerGroups.ground_new.visible)draw(over._changed,'#e040e0',3);for(const c of CATS)if(layerGroups[c].visible&&over._obj[c])draw(over._obj[c],'#'+COL[c].toString(16).padStart(6,'0'),1.6);
+ if(layerGroups.routes.visible)draw(over._routes,'#4ad0ff',2.2);
+ if(traceData){mx.strokeStyle='#ffe14a';mx.lineWidth=1.5;mx.beginPath();traceData.pts.forEach((p,i)=>{const [px,py]=mapXY(p[0],p[1]);i?mx.lineTo(px,py):mx.moveTo(px,py)});mx.stroke();mx.fillStyle='#ff3030';for(const j of traceData.jumps){const [px,py]=mapXY(j[0],j[1]);mx.fillRect(px-3,py-3,6,6)}}
+ for(const k of tiles.keys()){const [a,b]=k.split(':')[1].split(',').map(Number);const [px,py,s]=mapXY(a*TILE,(b+1)*TILE);mx.strokeStyle='#ffffff33';mx.strokeRect(px,py,TILE*s,TILE*s)}
+ const [cx,cy]=mapXY(orbit.target.x,orbit.target.y);mx.strokeStyle='#fff';mx.lineWidth=1.5;mx.beginPath();mx.moveTo(cx-10,cy);mx.lineTo(cx+10,cy);mx.moveTo(cx,cy-10);mx.lineTo(cx,cy+10);mx.stroke()}
+mini.onclick=e=>{if(!mb)return;const r=mini.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*mini.width,py=(e.clientY-r.top)/r.height*mini.height;const [x0,x1,y0,y1]=mb;const s=Math.min(mini.width/(x1-x0),mini.height/(y1-y0));flyTo(x0+px/s,y0+(mini.height-py)/s)};
+function flyTo(x,y){const off=cam.position.clone().sub(orbit.target);const d=Math.max(80,Math.min(off.length(),400));off.setLength(d);orbit.target.set(x,y,30);cam.position.copy(orbit.target).add(off);orbit.update();ensureTiles();drawMini()}
+$('go').onclick=()=>flyTo(+$('gx').value,+$('gy').value);
+
+// ---------------- search ----------------
+async function doSearch(){const q=$('q').value.trim();if(!q)return;const res=await jget('/api/search?region='+region+'&q='+encodeURIComponent(q));const R=$('results');R.style.display='block';R.innerHTML='<div class="sub">'+res.length+(res.length>=300?'+':'')+' match(es)</div>';
+ for(const [id,name,cat,x,y] of res){const d=document.createElement('div'),b=document.createElement('b');b.textContent=name;b.onclick=()=>{pendingSelect='i'+id;flyTo(x,y)};const s=document.createElement('span');s.textContent=cat+' ('+x.toFixed(0)+','+y.toFixed(0)+')';d.append(b,s);R.append(d)}}
+$('qgo').onclick=doSearch;$('q').onkeydown=e=>{if(e.key==='Enter')doSearch()};
+
+// ---------------- traces ----------------
+let traceData=null;
+$('trshow').onclick=async()=>{const n=$('trsel').value;if(!n)return;traceData=await jget('/api/trace?name='+n);traceGroup.clear();
+ const a=new Float32Array(traceData.pts.length*3);traceData.pts.forEach((p,i)=>{a[i*3]=p[0];a[i*3+1]=p[1];a[i*3+2]=p[2]+0.8});const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(a,3));traceGroup.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:0xffe14a,depthTest:false})));
+ const J=$('jumps');J.innerHTML='<div class="sub">'+traceData.jumps.length+' reset/teleport jump(s) — click to fly there</div>';
+ traceData.jumps.forEach((j,i)=>{const s=new THREE.Mesh(new THREE.SphereGeometry(1.6),new THREE.MeshBasicMaterial({color:0xff3030,depthTest:false}));s.position.set(j[0],j[1],j[2]+1);traceGroup.add(s);
+  const d=new THREE.Mesh(new THREE.SphereGeometry(1.2),new THREE.MeshBasicMaterial({color:0xffa030,depthTest:false}));d.position.set(j[3],j[4],j[5]+1);traceGroup.add(d);
+  const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array([j[0],j[1],j[2]+1,j[3],j[4],j[5]+1]),3));traceGroup.add(new THREE.Line(lg,new THREE.LineBasicMaterial({color:0xff3030,depthTest:false})));
+  const r=document.createElement('div'),b=document.createElement('b');b.textContent=`#${i+1} ${j[6]}  (${j[0].toFixed(0)}, ${j[1].toFixed(0)}, z${j[2].toFixed(0)}) → (${j[3].toFixed(0)}, ${j[4].toFixed(0)})`;b.onclick=()=>flyTo(j[0],j[1]);r.append(b);J.append(r)});drawMini();
+ if(traceData.jumps.length)flyTo(traceData.jumps[0][0],traceData.jumps[0][1])};
+$('trhide').onclick=()=>{traceData=null;traceGroup.clear();$('jumps').innerHTML='';drawMini()};
+
+
+// ---------------- box (marquee) select: drag a rectangle to select many objects, move/rotate/scale/delete them together ----------------
+const pivot=new THREE.Group();scene.add(pivot);let msel=[],mqOn=false,mq=null;
+const mqDiv=document.createElement('div');mqDiv.style.cssText='position:absolute;border:1px dashed #ffb04a;background:#ffb04a22;display:none;pointer-events:none;z-index:4';$('view').append(mqDiv);
+function releaseMulti(){for(const id of msel){const o=objs.get(id);if(!o)continue;for(const m of o.meshes)m.material.emissive.setHex(0);if(o.group.parent===pivot){pivot.updateMatrixWorld(true);layerGroups[o.entry.cat].attach(o.group)}}msel=[];if(sel&&sel.type==='multi'){gizmo.detach();sel=null}pivot.position.set(0,0,0);pivot.quaternion.set(0,0,0,1);pivot.scale.set(1,1,1);pivot.updateMatrixWorld(true)}
+function selectMulti(ids,add){if(!add)releaseMulti();else if(sel&&sel.type==='multi'){gizmo.detach();pivot.updateMatrixWorld(true);for(const id of msel){const o=objs.get(id);if(o&&o.group.parent===pivot)layerGroups[o.entry.cat].attach(o.group)}pivot.position.set(0,0,0);pivot.quaternion.set(0,0,0,1);pivot.scale.set(1,1,1);pivot.updateMatrixWorld(true)}
+ deselectKeepMulti();for(const id of ids)if(!msel.includes(id))msel.push(id);if(!msel.length){$('info').textContent='nothing inside the box';return}
+ const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];let tris=0;const cat={};for(const id of msel){const o=objs.get(id),b=o.entry.bbox;cat[o.entry.cat]=(cat[o.entry.cat]||0)+1;for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],b[k]);hi[k]=Math.max(hi[k],b[k+3])}}
+ pivot.position.set((lo[0]+hi[0])/2,(lo[1]+hi[1])/2,(lo[2]+hi[2])/2);pivot.updateMatrixWorld(true);
+ for(const id of msel){const o=objs.get(id);if(o.inst)pivot.attach(o.group);for(const m of o.meshes)m.material.emissive.setHex(0x553300)}
+ gizmo.attach(pivot);sel={type:'multi'};$('info').textContent=msel.length+' objects selected ('+Object.entries(cat).map(([k,n])=>n+' '+k).join(', ')+')\nfootprint '+(hi[0]-lo[0]).toFixed(0)+' × '+(hi[1]-lo[1]).toFixed(0)+' m, height '+(hi[2]-lo[2]).toFixed(0)+' m\nMove/Rotate/Scale moves them all (placed copies only; terrain/road pieces can be deleted but not moved). Delete removes them. Shift+drag adds.'}
+function deselectKeepMulti(){selPolys.length=0;rebuildSel();$('grp').innerHTML='';if(sel&&sel.type==='obj'){for(const m of sel.obj.meshes)m.material.emissive.setHex(0)}if(sel&&sel.type!=='multi')gizmo.detach()}
+gizmo.addEventListener('objectChange',()=>{if(sel&&sel.type==='multi'){pivot.updateMatrixWorld(true);for(const id of msel){const o=objs.get(id);if(o&&o.inst)upsertInst(o)}}});
+function multiDelete(){const ids=msel.slice();releaseMulti();for(const id of ids){const o=objs.get(id);if(!o)continue;if(o.inst){o.group.position.z-=2000;upsertInst(o);o.group.visible=false}else{ops=ops.filter(x=>!(x.op==='transform_object'&&x.id===o.entry.id));ops.push({op:'remove_object',region,id:+String(id).replace(/\D/g,'')||o.entry.id,name:o.entry.name});o.group.visible=false}}saveOps();$('info').textContent=ids.length+' objects deleted'}
+$('mqb').onclick=()=>{mqOn=!mqOn;$('mqb').classList.toggle('on',mqOn);cv.style.cursor=mqOn?'crosshair':''};
+cv.addEventListener('pointerdown',e=>{if(e.button!==0||!(mqOn||e.ctrlKey))return;if(gizmo.axis)return;const r=cv.getBoundingClientRect();mq={alt:e.altKey,x0:e.clientX-r.left,y0:e.clientY-r.top,x1:e.clientX-r.left,y1:e.clientY-r.top,add:e.shiftKey};orbit.enabled=false;down=null;e.stopImmediatePropagation();e.preventDefault()},true);
+addEventListener('pointermove',e=>{if(!mq)return;const r=cv.getBoundingClientRect();mq.x1=e.clientX-r.left;mq.y1=e.clientY-r.top;Object.assign(mqDiv.style,{display:'block',left:Math.min(mq.x0,mq.x1)+'px',top:Math.min(mq.y0,mq.y1)+'px',width:Math.abs(mq.x1-mq.x0)+'px',height:Math.abs(mq.y1-mq.y0)+'px'})});
+addEventListener('pointerup',e=>{if(!mq)return;const q=mq;mq=null;mqDiv.style.display='none';orbit.enabled=true;const r=cv.getBoundingClientRect();const xa=Math.min(q.x0,q.x1),xb=Math.max(q.x0,q.x1),ya=Math.min(q.y0,q.y1),yb=Math.max(q.y0,q.y1);if(xb-xa<5&&yb-ya<5)return;
+ const ids=[],v=new THREE.Vector3();for(const [id,o] of objs){if(!o.group.visible||o.group.parent===pivot&&false)continue;let p=o.group.parent;let vis=true;while(p){if(!p.visible){vis=false;break}p=p.parent}if(!vis)continue;const b=o.entry.bbox;v.set((b[0]+b[3])/2,(b[1]+b[4])/2,(b[2]+b[5])/2).project(cam);if(v.z>1)continue;const sx=(v.x+1)/2*r.width,sy=(1-v.y)/2*r.height;if(sx>=xa&&sx<=xb&&sy>=ya&&sy<=yb)ids.push(id)}
+ if(e.altKey||q.alt){const seen=new Set(),vv=new THREE.Vector3();if(!q.add)selPolys.length=0;
+  for(const m of pickables){const u=m.userData;if(!u.coll||!m.visible)continue;let p=m.parent,vis=true;while(p){if(!p.visible){vis=false;break}p=p.parent}if(!vis)continue;const pos=m.geometry.attributes.position.array,pid=u.pid;
+   for(let t=0;t<pid.length/2;t++){const key=pid[2*t]+':'+pid[2*t+1];if(seen.has(key))continue;let cx=0,cy=0,cz=0;for(let k=0;k<3;k++){cx+=pos[t*9+k*3];cy+=pos[t*9+k*3+1];cz+=pos[t*9+k*3+2]}vv.set(cx/3,cy/3,cz/3).project(cam);if(vv.z>1)continue;const sx=(vv.x+1)/2*r.width,sy=(1-vv.y)/2*r.height;if(sx>=xa&&sx<=xb&&sy>=ya&&sy<=yb){seen.add(key);if(!selPolys.some(z=>z.sid===pid[2*t]&&z.poly===pid[2*t+1]))selPolys.push({sid:pid[2*t],poly:pid[2*t+1]})}}}
+  deselectKeepPolys();sel={type:'poly'};rebuildSel();$('info').textContent=selPolys.length+' collision polygon(s) box-selected. Ctrl+C copies them, Delete removes them.';status(selPolys.length+' collision polygons selected');return}
+ selectMulti(ids,q.add)});
+function deselectKeepPolys(){const keep=selPolys.slice();deselect();selPolys.push(...keep)}
+
+
+(function(){const m=location.hash.match(/drag=([\d.,]+)(&move=([-\d.,]+))?/);if(!m)return;setTimeout(()=>{const b=m[1].split(',').map(Number),r=cv.getBoundingClientRect();const o={bubbles:true,pointerId:1,button:0,ctrlKey:true,isPrimary:true};
+ cv.dispatchEvent(new PointerEvent('pointerdown',{...o,clientX:r.left+b[0],clientY:r.top+b[1]}));window.dispatchEvent(new PointerEvent('pointermove',{...o,clientX:r.left+b[2],clientY:r.top+b[3]}));window.dispatchEvent(new PointerEvent('pointerup',{...o,clientX:r.left+b[2],clientY:r.top+b[3]}));
+ if(m[3]){const d=m[3].split(',').map(Number);setTimeout(()=>{pivot.position.x+=d[0];pivot.position.y+=d[1];pivot.updateMatrixWorld(true);gizmo.dispatchEvent({type:'objectChange'})},500)}},9000)})();
+// ---------------- copy / paste between regions, groups ----------------
+let clip=null,groups=[];const texR={};
+function getTexR(reg,k){const kk=reg+':'+k;if(texR[kk])return texR[kk];const t=new THREE.TextureLoader().load('/api/tex.png?region='+reg+'&key='+k+'&s=256');t.wrapS=t.wrapT=THREE.RepeatWrapping;t.flipY=false;if(THREE.sRGBEncoding)t.encoding=THREE.sRGBEncoding;return texR[kk]=t}
+function selIds(){if(sel&&sel.type==='multi')return msel.slice();if(sel&&sel.type==='obj')return [sel.id];return []}
+function itemOf(id){const o=objs.get(id);if(!o)return null;return o.inst?{kind:'inst',id:o.inst.id,name:o.inst.name}:{kind:'obj',id:o.entry.id,name:o.entry.name}}
+async function copyPolys(){const r=await fetch('/api/polys',{method:'POST',body:JSON.stringify({region,polys:selPolys.map(q=>[q.sid,q.poly])})});const G=await r.json();if(!G.length){status('nothing to copy');return}
+ const lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];for(const g of G)for(let k=0;k<4;k++){lo[0]=Math.min(lo[0],g.x[k]);hi[0]=Math.max(hi[0],g.x[k]);lo[1]=Math.min(lo[1],g.y[k]);hi[1]=Math.max(hi[1],g.y[k]);lo[2]=Math.min(lo[2],g.z[k]);hi[2]=Math.max(hi[2],g.z[k])}
+ clip={region,items:[],polys:G,centroid:[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2,lo[2]],size:[hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2]]};try{sessionStorage.setItem('ug2clip',JSON.stringify(clip))}catch(e){}
+ const ng=G.filter(g=>g.k==='ground').length;status('copied '+ng+' ground + '+(G.length-ng)+' wall polygons. Ctrl+V pastes them at the camera target.')}
+function doCopy(){if(sel&&sel.type==='poly'&&selPolys.length){copyPolys();return}const ids=selIds();if(!ids.length){status('select something first (click it, Box select, or Ctrl+Alt+drag for collision polygons)');return}const items=[],lo=[1e9,1e9,1e9],hi=[-1e9,-1e9,-1e9];
+ for(const id of ids){const it=itemOf(id);if(!it)continue;items.push(it);const b=objs.get(id).entry.bbox;for(let k=0;k<3;k++){lo[k]=Math.min(lo[k],b[k]);hi[k]=Math.max(hi[k],b[k+3])}}
+ clip={region,items,centroid:[(lo[0]+hi[0])/2,(lo[1]+hi[1])/2,lo[2]],size:[hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2]]};try{sessionStorage.setItem('ug2clip',JSON.stringify(clip))}catch(e){}
+ status('copied '+items.length+' objects from '+region+' ('+clip.size.map(x=>x.toFixed(0)).join(' × ')+' m). Switch region if you like, then Ctrl+V.')}
+async function makePastePreview(op){const r=await fetch('/api/clip',{method:'POST',body:JSON.stringify({region:op.src,items:op.items})});const G=await r.json();const grp=new THREE.Group();grp.position.fromArray(op.pos);grp.quaternion.fromArray(op.quat);grp.scale.fromArray(op.scl);
+ for(const g of G){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(dec(g.pos,Float32Array),3));geo.setAttribute('uv',new THREE.BufferAttribute(dec(g.uv,Float32Array),2));geo.setIndex(new THREE.BufferAttribute(dec(g.idx,Uint32Array),1));geo.computeVertexNormals();geo.translate(-op.centroid[0],-op.centroid[1],-op.centroid[2]);
+  const map=$('texs').checked&&g.key?getTexR(op.src,g.key):null;const pm=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:map?0xffffff:0xd0a060,map:map,side:THREE.DoubleSide,flatShading:true}));const pid=++prevSeq;prevById.set(pid,op);pm.userData={prevId:pid};grp.add(pm);pickables.push(pm)}
+ try{if(op.collision!==false&&op.size){const rc=await fetch('/api/clipcoll',{method:'POST',body:JSON.stringify({region:op.src,centroid:op.centroid,size:op.size})});const cp=await rc.json();addCollMeshes(grp,op,cp);op._ncoll=cp.length}}catch(e){}
+ grp.visible=(op.region||'L4RA')===region;prevGroup.add(grp);op._grp=grp}
+function selectPaste(op){deselect();if(!op._grp)return;sel={type:'paste',op,grp:op._grp};gizmo.attach(op._grp);$('info').textContent='pasted copy of '+op.n+(op.op==='paste_collision'?' collision polygons':' objects')+' from '+op.src+' ('+op.size.map(x=>x.toFixed(0)).join(' × ')+' m)\nMove/Rotate/Scale it with the gizmo. It is written into the map (geometry + its textures) when you Build. Delete removes it.'}
+function addCollMeshes(grp,op,polys){const cen=op.centroid;
+ for(const kind of ['ground','wall']){const arr=[];for(const g of polys){const isG=g.k==='ground';if(isG!==(kind==='ground'))continue;
+  if(isG){const c=[0,1,2,3].map(k=>[g.x[k]-cen[0],g.y[k]-cen[1],g.z[k]-cen[2]+0.05]);for(const i of [0,1,2,0,2,3])arr.push(...c[i])}
+  else{const a=[g.x[0]-cen[0],g.y[0]-cen[1]],b=[g.x[2]-cen[0],g.y[2]-cen[1]],z0=Math.min(...g.z)-cen[2],z1=g.k==='wall_tall'?z0+6:Math.max(...g.z)-cen[2];arr.push(a[0],a[1],z0,b[0],b[1],z0,b[0],b[1],z1,a[0],a[1],z0,b[0],b[1],z1,a[0],a[1],z1)}}
+  if(!arr.length)continue;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(arr),3));const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:kind==='ground'?0xe040e0:0xf0a030,transparent:true,opacity:.5,side:THREE.DoubleSide,depthWrite:false}));const pid=++prevSeq;prevById.set(pid,op);m.userData={prevId:pid};grp.add(m);pickables.push(m)}}
+function makePasteCollPreview(op){const grp=new THREE.Group();grp.position.fromArray(op.pos);grp.quaternion.fromArray(op.quat);grp.scale.fromArray(op.scl);addCollMeshes(grp,op,op.polys);
+ grp.visible=(op.region||'L4RA')===region;prevGroup.add(grp);op._grp=grp}
+async function doPaste(){if(!clip){try{clip=JSON.parse(sessionStorage.getItem('ug2clip'))}catch(e){}}if(!clip){status('nothing copied yet');return}
+ if(clip.polys){const t=orbit.target,op={op:'paste_collision',region,src:clip.region,polys:clip.polys,centroid:clip.centroid,pos:[t.x,t.y,t.z],quat:[0,0,0,1],scl:[1,1,1],size:clip.size,n:clip.polys.length};makePasteCollPreview(op);ops.push(op);selectPaste(op);saveOps();status('pasted '+op.n+' collision polygons at the camera target; drag them into place');return}
+ const t=orbit.target,op={op:'paste',region,src:clip.region,items:clip.items.map(i=>({kind:i.kind,id:i.id})),centroid:clip.centroid,pos:[t.x,t.y,t.z],quat:[0,0,0,1],scl:[1,1,1],size:clip.size,n:clip.items.length};
+ status('pasting…');await makePastePreview(op);ops.push(op);selectPaste(op);saveOps();status('pasted at the camera target; drag it into place')}
+gizmo.addEventListener('objectChange',()=>{if(sel&&sel.type==='paste'){const g=sel.grp,o=sel.op;o.pos=g.position.toArray();o.quat=g.quaternion.toArray();o.scl=g.scale.toArray();saveOps()}});
+function groupOf(id){return groups.find(g=>g.region===region&&g.ids.includes(id))}
+function doGroup(){const ids=selIds();if(ids.length<2){status('select 2 or more objects (Box select) to group them');return}groups=groups.filter(g=>!(g.region===region&&g.ids.some(i=>ids.includes(i))));groups.push({region,ids});saveOps();status('grouped '+ids.length+' objects: clicking any one of them now selects the whole group')}
+function doUngroup(){const ids=selIds(),n=groups.length;groups=groups.filter(g=>!(g.region===region&&g.ids.some(i=>ids.includes(i))));saveOps();status(n-groups.length?'ungrouped':'that selection is not part of a group')}
+$('bcopy').onclick=doCopy;$('bpaste').onclick=doPaste;$('bgrp').onclick=doGroup;$('bung').onclick=doUngroup;
+
+// ---------------- modding-tool extras: undo, properties, drop to ground, measure, views, readiness, play ----------------
+function undoLast(){if(ops.length){undo(ops.length-1);status('undone')}else status('nothing to undo')}
+$('bundo').onclick=undoLast;
+function selTarget(){if(!sel)return null;if(sel.type==='marker')return sel.m.group;if(sel.type==='obj')return sel.obj.group;if(sel.type==='multi')return pivot;if(sel.type==='paste')return sel.grp;if(sel.type==='prev')return sel.mesh||null;return null}
+function refreshProps(force){const t=selTarget();const act=document.activeElement;if(!force&&act&&act.closest&&act.closest('#props'))return;if(!t){for(const id of ['px','py','pz','pr','ps'])$(id).value='';return}
+ const p=new THREE.Vector3(),q=new THREE.Quaternion(),s=new THREE.Vector3();t.updateWorldMatrix(true,false);t.matrixWorld.decompose(p,q,s);const e=new THREE.Euler().setFromQuaternion(q,'ZYX');
+ $('px').value=p.x.toFixed(2);$('py').value=p.y.toFixed(2);$('pz').value=p.z.toFixed(2);$('pr').value=(e.z*180/Math.PI).toFixed(1);$('ps').value=s.x.toFixed(3)}
+function applyProps(){const t=selTarget();if(!t)return;
+ if(t.parent&&t.parent!==scene&&t.parent.matrixWorld){/* children of layer groups have identity parents, fine */}
+ t.position.set(+$('px').value,+$('py').value,+$('pz').value);const e=new THREE.Euler().setFromQuaternion(t.quaternion,'ZYX');e.z=(+$('pr').value)*Math.PI/180;t.quaternion.setFromEuler(e);const k=+$('ps').value||1;t.scale.set(k,k,k);t.updateMatrixWorld(true);gizmo.dispatchEvent({type:'objectChange'})}
+for(const id of ['px','py','pz','pr','ps'])$(id).addEventListener('change',applyProps);
+setInterval(()=>refreshProps(false),400);
+$('bdrop').onclick=async()=>{const t=selTarget();if(!t){status('select something first');return}t.updateWorldMatrix(true,true);const b=new THREE.Box3().setFromObject(t);const c=b.getCenter(new THREE.Vector3());
+ const r=await jget('/api/groundz?region='+region+'&x='+c.x+'&y='+c.y);if(r.z==null){status('no ground collision under that object');return}t.position.z+=r.z-b.min.z;t.updateMatrixWorld(true);gizmo.dispatchEvent({type:'objectChange'});refreshProps(true);status('dropped onto the ground (z '+r.z.toFixed(1)+')')};
+// measure
+const measOverlay=new THREE.Group();scene.add(measOverlay);let measP=[];
+$('bmeas').onclick=()=>{setTool(tool==='measure'?null:'measure');if(tool==='measure')status('measure: click two points')};
+// views
+function bmLoad(){try{return JSON.parse(localStorage.getItem('ug2bm')||'[]')}catch(e){return[]}}
+function bmDraw(){const s=$('bm');s.innerHTML='<option value="">views…</option>';bmLoad().forEach((b,i)=>{const o=document.createElement('option');o.value=i;o.textContent=b.name+' ('+b.region+')';s.append(o)})}
+$('bmsave').onclick=()=>{const n=$('bmn').value.trim()||('view '+(bmLoad().length+1));const l=bmLoad();l.push({name:n,region,cam:cam.position.toArray(),target:orbit.target.toArray()});try{localStorage.setItem('ug2bm',JSON.stringify(l))}catch(e){}$('bmn').value='';bmDraw()};
+$('bm').onchange=async e=>{const b=bmLoad()[+e.target.value];if(!b)return;if(b.region!==region){$('region').value=b.region;await loadRegion(b.region)}orbit.target.fromArray(b.target);cam.position.fromArray(b.cam);orbit.update();ensureTiles()};
+$('bmdel').onclick=()=>{const i=$('bm').value;if(i==='')return;const l=bmLoad();l.splice(+i,1);try{localStorage.setItem('ug2bm',JSON.stringify(l))}catch(e){}bmDraw()};
+bmDraw();
+// readiness: dry-run the build after you stop editing
+let rdT=null,rdBusy=false;
+function scheduleReady(){updateBadge();clearTimeout(rdT);$('ready').textContent='…checking';$('ready').style.color='';rdT=setTimeout(async()=>{if(rdBusy)return;rdBusy=true;try{for(const o of ops)if(o._mesh&&o.op==='add_mesh')bakeMesh(o);const j=await post('/api/check',{ops});
+ if(j.ok){const h=j.report.filter(x=>x.includes('hosted')),w=j.report.filter(x=>x.startsWith('WARNING'));if(w.length){$('ready').textContent='⚠ '+w.length+' original ground polygon(s) lie ABOVE your quads (car jumps) — see Edits tab › Check';$('ready').style.color='#ff9a3a';$('buildout').textContent=w.join('\n')}else{$('ready').textContent='✔ builds fine ('+ops.length+' edits)'+(h.length?' · geometry hosted':'');$('ready').style.color='#3fbf6a'}}else{$('ready').textContent='✖ '+j.error;$('ready').style.color='#e04848'}}catch(e){$('ready').textContent='check failed'}rdBusy=false},4000)}
+// ---------------- build ----------------
+async function post(u,b){const r=await fetch(u,{method:'POST',body:JSON.stringify(b)});return r.json()}
+const showBuild=j=>$('buildout').textContent=j.ok?(j.report.join('\n')+(j.out?'\n→ '+j.out:'')):('FAILED: '+j.error);
+$('check').onclick=async()=>{$('buildout').textContent='checking…';for(const o of ops)if(o._mesh&&o.op==='add_mesh')bakeMesh(o);showBuild(await post('/api/check',{ops}))};
+let builtSig=null,builtAt='';
+function opsSig(){try{return JSON.stringify(ops)}catch(e){return ''}}
+function updateBadge(){const b=$('bbadge');if(!b)return;if(builtSig===null){b.textContent='not built yet this session';b.style.color='#e0a030';return}if(opsSig()===builtSig){b.textContent='✔ all '+ops.length+' edits built at '+builtAt+' (relaunch the game to load them)';b.style.color='#4fd07a'}else{b.textContent='● unbuilt changes — press Build';b.style.color='#ff7a4a'}}
+$('build').onclick=async()=>{$('buildout').textContent='building…';$('bbadge').textContent='building…';$('bbadge').style.color='#e0a030';for(const o of ops)if(o._mesh&&o.op==='add_mesh')bakeMesh(o);const j=await post('/api/build',{ops});showBuild(j);
+ if(j.ok){builtSig=opsSig();builtAt=j.built_at||new Date().toLocaleTimeString();updateBadge();status('BUILT '+(j.n_ops??ops.length)+' edits at '+builtAt+' → '+(j.files||[]).map(f=>f.name+' ('+(f.size/1048576).toFixed(1)+' MB)').join(', ')+'. Relaunch the game to load it.');const bo=$('buildout');bo.textContent='✔ BUILT at '+builtAt+' · '+(j.n_ops??ops.length)+' edits\nfiles written:\n'+(j.files||[]).map(f=>'  '+f.name+'  '+(f.size/1048576).toFixed(1)+' MB  ('+f.mtime+')').join('\n')+'\nfolder: '+j.out+'\n\n'+bo.textContent}else{$('bbadge').textContent='✘ build failed — see Edits tab';$('bbadge').style.color='#ff5050'}
+if(j.ok&&!$('install').dataset.shown){}};
+$('restore').onclick=async()=>{if(!confirm('Put the original game files back?'))return;const j=await post('/api/restore',{});$('buildout').textContent=j.ok?('restored '+j.restored+' file(s)'):('FAILED: '+j.error)};
+$('install').onclick=async()=>{if(!confirm('Copy the built files into the game folder?\nThe original files are backed up first (workspace/backups).'))return;const j=await post('/api/install',{});$('buildout').textContent=j.ok?('installed '+j.installed+' file(s) to '+j.to+'\nOriginals are backed up in the workspace; "Restore originals" puts them back.'):('FAILED: '+j.error)};
+$('clear').onclick=()=>{if(!confirm('Remove all edits?'))return;while(ops.length)undo(0)};
+
+// ---------------- regions / boot ----------------
+$('t_vert').onclick=()=>setTool('verts');loadProjects();$('showmk').onchange=()=>{markerGroup.visible=$('showmk').checked};$('t_mark').onclick=()=>setTool('marker');$('showbuilt').onchange=()=>loadRegion(region);
+// ---------------- keyboard camera: arrows move, PageUp / PageDown go up / down, Shift = faster ----------------
+orbit.enableKeys=false;const heldKeys=new Set();let shiftNow=false;
+addEventListener('keydown',e=>{const tg=e.target.tagName;if(tg==='INPUT'||tg==='TEXTAREA'||tg==='SELECT')return;shiftNow=e.shiftKey;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','PageUp','PageDown'].includes(e.key)){heldKeys.add(e.key);e.preventDefault()}});
+addEventListener('keyup',e=>{shiftNow=e.shiftKey;heldKeys.delete(e.key)});addEventListener('blur',()=>heldKeys.clear());
+let navLast=performance.now();(function navLoop(t){const dt=Math.min(.1,(t-navLast)/1000);navLast=t;
+ if(heldKeys.size){const off=cam.position.clone().sub(orbit.target),f=off.clone().negate();if(f.lengthSq()<1e-6)f.set(0,1,0);f.normalize();const rt=new THREE.Vector3(f.y,-f.x,0);if(rt.lengthSq()<1e-6)rt.set(1,0,0);rt.normalize();const sp=Math.max(10,off.length())*0.9*dt*(shiftNow?3:1),d=new THREE.Vector3();
+  if(heldKeys.has('ArrowUp'))d.addScaledVector(f,sp);if(heldKeys.has('ArrowDown'))d.addScaledVector(f,-sp);if(heldKeys.has('ArrowRight'))d.addScaledVector(rt,sp);if(heldKeys.has('ArrowLeft'))d.addScaledVector(rt,-sp);if(heldKeys.has('PageUp'))d.z+=sp;if(heldKeys.has('PageDown'))d.z-=sp;
+  orbit.target.add(d);cam.position.add(d);orbit.update()}requestAnimationFrame(navLoop)})(performance.now());
+
+// ---------------- projects ----------------
+let PRJ=null;
+async function loadProjects(){try{PRJ=await jget('/api/projects')}catch(e){return}renderProjects()}
+function pjMsg(t,bad){$('pj_msg').textContent=t||'';$('pj_msg').style.color=bad?'#ff7a4a':''}
+function renderProjects(){if(!PRJ)return;const a=PRJ.active.meta;$('pjl')&&($('pjl').textContent='project: '+a.name);if(document.activeElement.id!=='pj_name'&&document.activeElement.id!=='pj_desc'){$('pj_name').value=a.name||'';$('pj_ver').value=a.version||'';$('pj_author').value=a.author||'';$('pj_desc').value=a.description||''}
+ const sel=$('pj_open');sel.innerHTML='';for(const p of PRJ.available){if(p.id===PRJ.active.id)continue;const o=document.createElement('option');o.value=p.id;o.textContent=p.name+' '+p.version;sel.append(o)}
+ const box=$('pj_stack');box.innerHTML='';if(!PRJ.stack.length){box.innerHTML='<div class="sub">No imported projects yet. Use "Import .ug2proj…" to add one made by somebody else.</div>';return}
+ PRJ.stack.forEach((s,i)=>{const d=document.createElement('div');d.style.cssText='border:1px solid var(--line,#333);border-radius:6px;padding:6px;margin:4px 0';const m=s.meta;
+  const top=document.createElement('div');top.className='row';top.style.margin='0';const cb=document.createElement('input');cb.type='checkbox';cb.checked=s.enabled;cb.onchange=()=>stackSave(PRJ.stack.map((x,k)=>({id:x.id,enabled:k===i?cb.checked:x.enabled})));
+  const nm=document.createElement('b');nm.textContent=m.name+' '+(m.version||'');nm.style.flex='1';const up=document.createElement('button');up.textContent='↑';up.onclick=()=>pjMove(i,-1);const dn=document.createElement('button');dn.textContent='↓';dn.onclick=()=>pjMove(i,1);const rm=document.createElement('button');rm.textContent='✕';rm.className='bad';rm.title='remove from the list (keeps the files)';rm.onclick=async()=>{await post('/api/projects/remove',{id:s.id});await loadProjects();afterStack()};
+  top.append(cb,nm,up,dn,rm);d.append(top);if(m.author||m.description){const t=document.createElement('div');t.className='sub';t.textContent=(m.author?m.author+' — ':'')+(m.description||'');d.append(t)}
+  for(const pr of s.problems){const t=document.createElement('div');t.className='sub';t.style.color='#ff7a4a';t.textContent='⚠ '+pr;d.append(t)}box.append(d)})}
+async function stackSave(list){const j=await post('/api/projects/stack',{stack:list});if(j.ok){PRJ=j;renderProjects();afterStack()}}
+function pjMove(i,d){const l=PRJ.stack.map(x=>({id:x.id,enabled:x.enabled})),k=i+d;if(k<0||k>=l.length)return;[l[i],l[k]]=[l[k],l[i]];stackSave(l)}
+function afterStack(){builtSig=null;updateBadge();scheduleReady()}
+$('pj_save').onclick=async()=>{const j=await post('/api/projects/meta',{name:$('pj_name').value,version:$('pj_ver').value,author:$('pj_author').value,description:$('pj_desc').value});if(j.ok){PRJ=j;renderProjects();pjMsg('saved')}};
+$('pj_new').onclick=async()=>{const n=prompt('Name of the new project:');if(!n)return;const j=await post('/api/projects/new',{name:n});if(j.ok)location.reload();else pjMsg(j.error,true)};
+$('pj_openb').onclick=async()=>{const id=$('pj_open').value;if(!id)return;const j=await post('/api/projects/open',{id});if(j.ok)location.reload();else pjMsg(j.error,true)};
+$('pj_export').onclick=async()=>{await flushOps();location.href='/api/projects/export'};
+$('pj_import').onclick=()=>$('pj_file').click();
+$('pj_file').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const buf=await f.arrayBuffer();let r=await fetch('/api/projects/import',{method:'POST',body:buf});let j=await r.json();
+ if(!j.ok&&/already exists/.test(j.error||'')&&confirm(j.error+'\n\nReplace the imported copy with this file?')){r=await fetch('/api/projects/import',{method:'POST',body:buf,headers:{'X-Options':'replace=1'}});j=await r.json()}
+ if(j.ok){PRJ=j;renderProjects();afterStack();pjMsg('imported "'+j.id+'". Press Build to include it.')}else pjMsg(j.error,true)};
+async function flushOps(){try{await fetch('/api/edits',{method:'POST',body:JSON.stringify({ops,groups})})}catch(e){}}
+async function loadRegion(r){region=r;setTimeout(loadMarkers,300);try{const E=await jget('/api/edits');deletedPolys.clear();for(const o of (E.ops||[]))if(o.op==='remove_polys'&&(o.region||'L4RA')===r)for(const q of o.polys)deletedPolys.add(o.sid+':'+q)}catch(e){}for(const k of [...tiles.keys()])unloadTile(k);for(const k of [...bdLoaded])if(k.startsWith(region+':'))bdLoaded.delete(k);for(const c of ['bd_sky','bd_skyline','bd_hills','bd_other'])layerGroups[c].clear();for(const k of Object.keys(protoGeo))if(k.startsWith(region+':')&&0)delete protoGeo[k];for(const [id,o] of [...objs]){layerGroups[o.entry.cat].remove(o.group);objs.delete(id)}pickables.length=0;deselect();status('loading '+r+' …');
+ info=await jget('/api/info?region='+r);over=await jget('/api/overview?region='+r);mb=over.bounds;over._ground=pts(over.ground);over._mid=pts(over.mid);over._tall=pts(over.tall);over._changed=pts(over.changed);over._routes=pts(over.routes);over._obj={};for(const c in over.objects)over._obj[c]=pts(over.objects[c]);
+ const rg=layerGroups.routes;rg.clear();const sg=new THREE.SphereGeometry(2.2,8,6),sm=new THREE.MeshBasicMaterial({color:0x4ad0ff});for(let i=0;i<over._routes.length;i+=2){const s=new THREE.Mesh(sg,sm);s.position.set(over._routes[i],over._routes[i+1],31);rg.add(s)}
+ texList=await jget('/api/textures?region='+r);texMap={};for(const t of texList)texMap[t[0]]=t;refreshTexGrid();
+ const cx=(mb[0]+mb[1])/2,cy=(mb[2]+mb[3])/2;if(r!=='L4RA'){orbit.target.set(cx,cy,30);cam.position.set(cx,cy-200,250);orbit.update()}
+ for(const o of ops)if(o._grp)o._grp.visible=(o.region||'L4RA')===r;ensureTiles();drawMini();status(r+': '+info.sections.length+' collision sections · '+over._routes.length/2+' route nodes')}
+(async()=>{resize();const R=await jget('/api/regions');for(const r of R.regions){const o=document.createElement('option');o.textContent=r;$('region').append(o)}$('region').value='L4RA';$('region').onchange=e=>loadRegion(e.target.value);
+ for(const n of R.traces){const o=document.createElement('option');o.textContent=n;$('trsel').append(o)}if(R.traces.length)$('trsel').value=R.traces[R.traces.length-1];if(R.install){$('install').style.display='';$('restore').style.display=''}
+ const grid=new THREE.GridHelper(8000,160,0x44506a,0x1c2230);grid.rotation.x=Math.PI/2;grid.position.set(0,0,5);scene.add(grid);
+ orbit.target.set(985,60,30);cam.position.set(985,-110,170);const H=location.hash.match(/cam=([-\d.,]+)/);if(H){const a=H[1].split(',').map(Number);cam.position.set(a[0],a[1],a[2]);orbit.target.set(a[3],a[4],a[5])}
+ orbit.update();const RG=location.hash.match(/region=(\w+)/);await loadRegion(RG?RG[1]:'L4RA');if(RG)$('region').value=RG[1];
+ if(/nocol/.test(location.hash))for(const k of ['ground','ground_new','wall_tall','wall_mid','routes'])layerGroups[k].visible=false;
+ const TR=location.hash.match(/trace=([\w.]+)/);if(TR){$('trsel').value=TR[1];setTimeout(()=>$('trshow').click(),800)}
+ const saved=await jget('/api/edits');groups=saved.groups||[];if(saved.ops&&saved.ops.length){ops=saved.ops;for(const o of ops){if(['add_road','add_quad'].includes(o.op))makePreview(o);if(o.op==='paste')makePastePreview(o);if(o.op==='paste_collision')makePasteCollPreview(o)}renderOps()}
+ (function loop(){requestAnimationFrame(loop);orbit.update();renderer.render(scene,cam);$('hud').textContent=region+' · cam '+cam.position.toArray().map(v=>v.toFixed(0)).join(', ')+' · target '+orbit.target.x.toFixed(0)+', '+orbit.target.y.toFixed(0)+' · '+tiles.size+' tiles, '+objs.size+' objects'+(tool?' · TOOL: '+tool.toUpperCase():'')})();setInterval(drawMini,1500)})();
+
+// ---------------- application shell: menus, docks, tabs, tool options ----------------
+(function(){
+ const body=document.body;
+ // menus
+ document.querySelectorAll('.mn>button').forEach(b=>b.addEventListener('click',e=>{const m=b.parentElement,o=m.classList.contains('open');document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'));if(!o)m.classList.add('open');e.stopPropagation()}));
+ document.addEventListener('click',()=>{document.querySelectorAll('.mn.open').forEach(x=>x.classList.remove('open'))});
+ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{const t=$(b.dataset.go);if(t)t.click()}));
+ function showTab(group,id){const bar=$(group==='r'?'rtabs':'btabs');bar.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x.dataset.t===id));
+  (group==='r'?['insp','layers','edits','proj','views']:['tex','log']).forEach(t=>{const p=$((group==='r'?'p_':'b_')+t);if(p)p.classList.toggle('on',t===id)})}
+ window.showTab=showTab;
+ $('rtabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>showTab('r',b.dataset.t)));$('btabs').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>showTab('b',b.dataset.t)));
+ // dock toggles + splitters
+ const toggle={rdock:()=>body.classList.toggle('nor'),bdock:()=>body.classList.toggle('bot'),mini:()=>$('minip').classList.toggle('min')};
+ $('minit').onclick=()=>{$('minip').classList.toggle('min');$('minit').textContent=$('minip').classList.contains('min')?'▸':'▾'};
+ const acts={...toggle,help:()=>$('help').classList.add('show'),
+  top:()=>{const t=orbit.target;cam.position.set(t.x,t.y-0.01,t.z+Math.max(150,cam.position.distanceTo(t)));orbit.update()},
+  frame:()=>{const t=selTarget&&selTarget();if(!t){status('select something first');return}const b=new THREE.Box3().setFromObject(t),c=b.getCenter(new THREE.Vector3()),s=b.getSize(new THREE.Vector3()).length();orbit.target.copy(c);cam.position.copy(c).add(new THREE.Vector3(0,-s*1.2,s*0.9));orbit.update()}};
+ document.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>acts[b.dataset.act]&&acts[b.dataset.act]()));
+ $('help').addEventListener('click',()=>$('help').classList.remove('show'));
+ function drag(el,fn){el.addEventListener('pointerdown',e=>{e.preventDefault();const mv=ev=>fn(ev),up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up)};addEventListener('pointermove',mv);addEventListener('pointerup',up)})}
+ drag($('rsplit'),e=>{const w=Math.max(260,Math.min(innerWidth*0.6,innerWidth-e.clientX));document.documentElement.style.setProperty('--rdock',w+'px')});
+ drag($('bsplit'),e=>{const h=Math.max(120,Math.min(innerHeight*0.6,innerHeight-e.clientY-24));document.documentElement.style.setProperty('--bdock',h+'px')});
+ new ResizeObserver(()=>resize()).observe($('view'));
+ // tool options bar follows the active tool
+ window.showOpts=function(){const key=mqOn?'box':(tool==='quad'?'quad':(tool==='road'||tool==='curve')?'road':tool==='wall'?'wall':tool==='marker'?'marker':tool==='measure'?'measure':'default');document.querySelectorAll('#opts .grp').forEach(g=>g.classList.toggle('show',g.id==='o_'+key))};
+ const _st=setTool;setTool=function(t){_st(t);showOpts()};
+ $('mqb').addEventListener('click',()=>setTimeout(showOpts,0));
+ $('t_obj').addEventListener('click',()=>{$('o_obj').classList.add('show')});
+ $('rcol2').onchange=e=>{$('rcol').checked=e.target.checked};$('rcol').onchange=e=>{$('rcol2').checked=e.target.checked};
+ $('dup').onclick=()=>doDup();
+ // selecting something shows the inspector
+ for(const n of ['selectObj','selectMulti','selectPaste']){const f=window[n];if(typeof f==='function')window[n]=function(...a){showTab('r','insp');return f.apply(this,a)}}
+ // shortcuts
+ addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='F1'){e.preventDefault();$('help').classList.toggle('show')}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='b'){e.preventDefault();$('build').click();showTab('r','edits')}if(e.key==='Escape'){$('help').classList.remove('show');$('results').style.display='none'}});
+ cv.addEventListener('pointerdown',()=>{$('results').style.display='none'});
+ const H=location.hash;let m=H.match(/[#&]tab=(\w+)/);if(m)showTab('r',m[1]);m=H.match(/[#&]btab=(\w+)/);if(m)showTab('b',m[1]);if(/[#&]nobottom/.test(H))body.classList.remove('bot');if(/[#&]help/.test(H))$('help').classList.add('show');
+ m=H.match(/[#&]bd=([a-z,]+)/);if(m)m[1].split(',').forEach(k=>{if(layerGroups['bd_'+k]){layerGroups['bd_'+k].visible=true;loadBackdrop(k)}});
+ // bring the Edits tab forward after a build
+ $('build').addEventListener('click',()=>showTab('r','edits'));$('check').addEventListener('click',()=>showTab('r','edits'));
+})();
+
+</script></body></html>
