@@ -4,14 +4,14 @@ import json, os, re, time, urllib.request
 from . import __version__
 
 REPO = "ps1ke/UG2-MapKit"
-RAW = f"https://raw.githubusercontent.com/{REPO}/main/ug2map/__init__.py"
+RAW = f"https://api.github.com/repos/{REPO}/contents/ug2map/__init__.py?ref=main"          # the API is always fresh; raw.githubusercontent.com is cached for minutes
 PAGE = f"https://github.com/{REPO}"
 EVERY = 24 * 3600
 
 def _ver(v): return tuple(int(x) for x in re.findall(r"\d+", v)[:4]) + (0,) * (4 - len(re.findall(r"\d+", v)[:4]))
 
 def fetch_latest(timeout=4):
-    req = urllib.request.Request(RAW, headers={"User-Agent": "UG2-MapKit-update-check"})
+    req = urllib.request.Request(RAW, headers={"User-Agent": "UG2-MapKit-update-check", "Accept": "application/vnd.github.raw+json"})
     m = re.search(r'__version__\s*=\s*"([^"]+)"', urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8", "replace"))
     return m.group(1) if m else None
 

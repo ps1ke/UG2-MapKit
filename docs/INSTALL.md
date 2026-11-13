@@ -52,7 +52,7 @@ builds the project stack (see [PROJECTS.md](PROJECTS.md)) and installs it.
 
 ## Updating
 
-The viewer checks GitHub once a day (in the background) and shows an orange **update available** link in the top bar when a newer version exists. It only notifies; nothing is installed for you. To update, run `git pull` in the program folder. The check downloads one small public file (`ug2map/__init__.py`) and sends nothing about you or your files; turn it off with `--no-update-check`.
+The viewer checks GitHub once a day (in the background) and shows an orange **update available** link in the top bar when a newer version exists. It only notifies; nothing is installed for you. To update, run `git pull` in the program folder. The check reads one small public file of the repository through the GitHub API (`ug2map/__init__.py`) and sends nothing about you or your files; turn it off with `--no-update-check`.
 
 ## Uninstalling your changes
 
